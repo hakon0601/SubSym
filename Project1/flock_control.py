@@ -57,9 +57,9 @@ class FlockControl:
         for boid in self.boids:
             neighbours, avg_pos, avg_velocity = boid.get_neighbours(self.boids, self.neighbour_distance)
             if neighbours:
-                sep = self.calculate_separation_force(boid, neighbours, avg_pos, self.separation_weight)
+                sep = self.calculate_separation_force(boid, neighbours, avg_pos, self.separation_weight, self.neighbour_distance, self.max_velocity)
                 align = self.calculate_alignment_force(boid, neighbours, avg_velocity)
-                coh = self.calculate_cohersion_force(boid, neighbours, avg_pos)
+                coh = self.calculate_cohersion_force(boid, neighbours, avg_pos, self.cohesion_weight)
                 boid.velocity_x = int(round(max(self.max_velocity * -1, min(self.max_velocity, boid.velocity_x + sep[0] + align[0] + coh[0]))))
                 boid.velocity_y = int(round(max(self.max_velocity * -1, min(self.max_velocity, boid.velocity_y + sep[1] + align[1] + coh[1]))))
                 #print "sep: ", sep, "\t align: ", align, "\t coh: ", coh
@@ -70,7 +70,7 @@ class FlockControl:
                     boid.velocity_y -= 1
             pred_neighbours, pred_avg_pos, pred_avg_velocity = boid.get_neighbours(self.predators, self.neighbour_distance)
             if pred_neighbours:
-                pred_avoidance = self.calculate_separation_force(boid, pred_neighbours, pred_avg_pos, separation_weight=1)
+                pred_avoidance = self.calculate_separation_force(boid, pred_neighbours, pred_avg_pos, 1, self.neighbour_distance, self.max_velocity)
                 boid.velocity_x = int(round(max(self.max_velocity * -1, min(self.max_velocity, pred_avoidance[0]))))
                 boid.velocity_y = int(round(max(self.max_velocity * -1, min(self.max_velocity, pred_avoidance[1]))))
                 print "boid sees pred"
@@ -84,20 +84,28 @@ class FlockControl:
     # TODO make predators follow boids and avoid obstacles
     def update_predators(self):
         for pred in self.predators:
+            sep = (0, 0)
+            coh = (0, 0)
             neighbours, avg_pos, avg_velocity = pred.get_neighbours(self.boids, self.predator_neighbour_distance)
             if neighbours:
-                coh = self.calculate_cohersion_force(pred, neighbours, avg_pos)
-                pred.velocity_x = int(max(self.max_predator_velocity * -1, min(self.max_predator_velocity, coh[0])))
-                pred.velocity_y = int(max(self.max_predator_velocity * -1, min(self.max_predator_velocity, coh[1])))
+                coh = self.calculate_cohersion_force(pred, neighbours, avg_pos, cohesion_weight=0.1)
+            pred_neighbours, pred_avg_pos, pred_avg_velocity = pred.get_neighbours(self.predators, self.predator_neighbour_distance)
+            if pred_neighbours:
+                sep = self.calculate_separation_force(pred, pred_neighbours, pred_avg_pos, 0.1, self.predator_neighbour_distance, self.max_predator_velocity)
+            if neighbours or pred_neighbours:
+                pred.velocity_x = int(max(self.max_predator_velocity * -1, min(self.max_predator_velocity, pred.velocity_x + coh[0] + sep[0])))
+                pred.velocity_y = int(max(self.max_predator_velocity * -1, min(self.max_predator_velocity, pred.velocity_y + coh[1] + sep[1])))
             obstacle_avoidance = self.calculate_obstacle_avoidance_force(pred)
             pred.move_boid(self.screen_size)
 
-    def calculate_separation_force(self, boid, neighbours, avg_pos, separation_weight):
-        x_diff_normalized = (boid.x - avg_pos[0])/float(self.neighbour_distance + neighbours[0].radius)
-        y_diff_normalized = (boid.y - avg_pos[1])/float(self.neighbour_distance + neighbours[0].radius)
+    def calculate_separation_force(self, boid, neighbours, avg_pos, separation_weight, neighbour_distance, max_velocity):
+        if not neighbours:
+            return (0, 0)
+        x_diff_normalized = (boid.x - avg_pos[0])/float(neighbour_distance + neighbours[0].radius)
+        y_diff_normalized = (boid.y - avg_pos[1])/float(neighbour_distance + neighbours[0].radius)
         # Will be large, when close, and small when far away
-        new_velocity_x = self.max_velocity * (1 - (x_diff_normalized ** 3))
-        new_velocity_y = self.max_velocity * (1 - (y_diff_normalized ** 3))
+        new_velocity_x = max_velocity * (1 - (x_diff_normalized ** 3))
+        new_velocity_y = max_velocity * (1 - (y_diff_normalized ** 3))
         if x_diff_normalized < 0:
             new_velocity_x *= -1
         if y_diff_normalized < 0:
@@ -106,23 +114,26 @@ class FlockControl:
         return (new_velocity_x * separation_weight, new_velocity_y * separation_weight)
 
     def calculate_alignment_force(self, boid, neighbours, avg_velocity):
+        if not neighbours:
+            return (0, 0)
         x_diff_angle = (avg_velocity[0] - boid.velocity_x)
         y_diff_angle = (avg_velocity[1] - boid.velocity_y)
         return (x_diff_angle * self.alignment_weight, y_diff_angle * self.alignment_weight)
 
-    def calculate_cohersion_force(self, boid, neighbours, avg_pos):
+    def calculate_cohersion_force(self, boid, neighbours, avg_pos, cohesion_weight):
+        if not neighbours:
+            return (0, 0)
         x_diff_normalized = (avg_pos[0] - boid.x)/float(self.neighbour_distance)
         y_diff_normalized = (avg_pos[1] - boid.y)/float(self.neighbour_distance)
         new_velocity_x = self.max_velocity * x_diff_normalized
         new_velocity_y = self.max_velocity * y_diff_normalized
 
-        return (new_velocity_x * self.cohesion_weight, new_velocity_y * self.cohesion_weight)
+        return (new_velocity_x * cohesion_weight, new_velocity_y * cohesion_weight)
 
     def calculate_obstacle_avoidance_force(self, boid):
         if not self.obstacles:
             return False
         obs = self.get_closest_obstacle(boid)
-
         center_to_center = max(boid.get_distance_to_other(obs), 1)
         if center_to_center < obs.radius + boid.radius:
             print "crisis, boid inside obstacle"

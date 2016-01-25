@@ -3,7 +3,7 @@ import Tkinter as tk
 
 SCREEN_WIDTH = 1600
 SCREEN_HEIGHT = 700
-NR_OF_BOIDS = 100
+NR_OF_BOIDS = 1
 BOID_RADIUS = 8
 PREDATOR_RADIUS = 20
 NEIGHBOUR_DISTANCE = BOID_RADIUS*10
@@ -100,7 +100,7 @@ class Gui(tk.Tk):
     def add_predator(self):
         pred = self.flock_controller.add_predator()
         self.predator_drawings.append(self.canvas.create_oval(pred.x - PREDATOR_RADIUS, pred.y - PREDATOR_RADIUS, pred.x + PREDATOR_RADIUS, pred.y + PREDATOR_RADIUS, fill='green', tags='rect'))
-        self.predator_direction_drawings.append(self.canvas.create_line(pred.x, pred.y, pred.x + (pred.velocity_x/float(MAX_PREDATOR_VELOCITY)) * PREDATOR_NEIGHBOUR_DISTANCE, pred.y + (pred.velocity_x/float(MAX_PREDATOR_VELOCITY)) * PREDATOR_NEIGHBOUR_DISTANCE, width=2))
+        self.predator_direction_drawings.append(self.canvas.create_line(pred.x, pred.y, pred.x + (pred.velocity_x/float(MAX_PREDATOR_VELOCITY)) * PREDATOR_NEIGHBOUR_DISTANCE, pred.y + (pred.velocity_y/float(MAX_PREDATOR_VELOCITY)) * PREDATOR_NEIGHBOUR_DISTANCE, width=2))
         if self.draw_neighbourhood:
             self.predator_neighbourhood_drawings.append(self.canvas.create_oval(pred.x - PREDATOR_NEIGHBOUR_DISTANCE, pred.y - PREDATOR_NEIGHBOUR_DISTANCE, pred.x + PREDATOR_NEIGHBOUR_DISTANCE, pred.y + PREDATOR_NEIGHBOUR_DISTANCE, fill=None))
 
@@ -132,7 +132,7 @@ class Gui(tk.Tk):
         for j in range(len(self.predator_drawings)):
             pred = self.flock_controller.predators[j]
             self.canvas.coords(self.predator_drawings[j], pred.x - PREDATOR_RADIUS, pred.y - PREDATOR_RADIUS, pred.x + PREDATOR_RADIUS, pred.y + PREDATOR_RADIUS)
-            self.canvas.coords(self.predator_direction_drawings[j], pred.x, pred.y, pred.x + (pred.velocity_x/float(MAX_PREDATOR_VELOCITY))* PREDATOR_NEIGHBOUR_DISTANCE, pred.y + (pred.velocity_x/float(MAX_PREDATOR_VELOCITY))* PREDATOR_NEIGHBOUR_DISTANCE)
+            self.canvas.coords(self.predator_direction_drawings[j], pred.x, pred.y, pred.x + (pred.velocity_x/float(MAX_PREDATOR_VELOCITY))* PREDATOR_NEIGHBOUR_DISTANCE, pred.y + (pred.velocity_y/float(MAX_PREDATOR_VELOCITY))* PREDATOR_NEIGHBOUR_DISTANCE)
             if self.draw_neighbourhood:
                 self.canvas.coords(self.predator_neighbourhood_drawings[j], pred.x - PREDATOR_NEIGHBOUR_DISTANCE, pred.y - PREDATOR_NEIGHBOUR_DISTANCE, pred.x + PREDATOR_NEIGHBOUR_DISTANCE, pred.y + PREDATOR_NEIGHBOUR_DISTANCE)
         
