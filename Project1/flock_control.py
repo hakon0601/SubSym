@@ -87,9 +87,9 @@ class FlockControl:
             neighbours, avg_pos, avg_velocity = pred.get_neighbours(self.boids, self.predator_neighbour_distance)
             if neighbours:
                 coh = self.calculate_cohersion_force(pred, neighbours, avg_pos)
-                pred.velocity_x = int(max(self.max_predator_velocity * -1, min(self.max_velocity, coh[0])))
-                pred.velocity_y = int(max(self.max_predator_velocity * -1, min(self.max_velocity, coh[1])))
-            #obstacle_avoidance = self.calculate_obstacle_avoidance_force(pred)
+                pred.velocity_x = int(max(self.max_predator_velocity * -1, min(self.max_predator_velocity, coh[0])))
+                pred.velocity_y = int(max(self.max_predator_velocity * -1, min(self.max_predator_velocity, coh[1])))
+            obstacle_avoidance = self.calculate_obstacle_avoidance_force(pred)
             pred.move_boid(self.screen_size)
 
     def calculate_separation_force(self, boid, neighbours, avg_pos, separation_weight):
@@ -121,13 +121,7 @@ class FlockControl:
     def calculate_obstacle_avoidance_force(self, boid):
         if not self.obstacles:
             return False
-        obs = self.obstacles[0]
-        distance_to_closest_obstacle = boid.get_distance_to_other(obs) - obs.radius
-        for i in range(1, len(self.obstacles)):
-            dist_to_obs = boid.get_distance_to_other(self.obstacles[i]) - self.obstacles[i].radius
-            if dist_to_obs < distance_to_closest_obstacle:
-                obs = self.obstacles[i]
-                distance_to_closest_obstacle = dist_to_obs
+        obs = self.get_closest_obstacle(boid)
 
         center_to_center = max(boid.get_distance_to_other(obs), 1)
         if center_to_center < obs.radius + boid.radius:
@@ -156,6 +150,16 @@ class FlockControl:
 
     def distance_between_points(self, x1, y1, x2, y2):
         return sqrt((x1 - x2)**2 + (y1 - y2)**2)
+
+    def get_closest_obstacle(self, boid):
+        obs = self.obstacles[0]
+        distance_to_closest_obstacle = boid.get_distance_to_other(obs) - obs.radius
+        for i in range(1, len(self.obstacles)):
+            dist_to_obs = boid.get_distance_to_other(self.obstacles[i]) - self.obstacles[i].radius
+            if dist_to_obs < distance_to_closest_obstacle:
+                obs = self.obstacles[i]
+                distance_to_closest_obstacle = dist_to_obs
+        return obs
 
 
 

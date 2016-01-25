@@ -3,7 +3,7 @@ import Tkinter as tk
 
 SCREEN_WIDTH = 1600
 SCREEN_HEIGHT = 700
-NR_OF_BOIDS = 1
+NR_OF_BOIDS = 100
 BOID_RADIUS = 8
 PREDATOR_RADIUS = 20
 NEIGHBOUR_DISTANCE = BOID_RADIUS*10
@@ -100,8 +100,9 @@ class Gui(tk.Tk):
     def add_predator(self):
         pred = self.flock_controller.add_predator()
         self.predator_drawings.append(self.canvas.create_oval(pred.x - PREDATOR_RADIUS, pred.y - PREDATOR_RADIUS, pred.x + PREDATOR_RADIUS, pred.y + PREDATOR_RADIUS, fill='green', tags='rect'))
-        self.predator_direction_drawings.append(self.canvas.create_line(pred.x, pred.y, pred.x + pred.velocity_x*3, pred.y + pred.velocity_y*3, width=2))
-        self.predator_neighbourhood_drawings.append(self.canvas.create_oval(pred.x - PREDATOR_NEIGHBOUR_DISTANCE, pred.y - PREDATOR_NEIGHBOUR_DISTANCE, pred.x + PREDATOR_NEIGHBOUR_DISTANCE, pred.y + PREDATOR_NEIGHBOUR_DISTANCE, fill=None))
+        self.predator_direction_drawings.append(self.canvas.create_line(pred.x, pred.y, pred.x + (pred.velocity_x/float(MAX_PREDATOR_VELOCITY)) * PREDATOR_NEIGHBOUR_DISTANCE, pred.y + (pred.velocity_x/float(MAX_PREDATOR_VELOCITY)) * PREDATOR_NEIGHBOUR_DISTANCE, width=2))
+        if self.draw_neighbourhood:
+            self.predator_neighbourhood_drawings.append(self.canvas.create_oval(pred.x - PREDATOR_NEIGHBOUR_DISTANCE, pred.y - PREDATOR_NEIGHBOUR_DISTANCE, pred.x + PREDATOR_NEIGHBOUR_DISTANCE, pred.y + PREDATOR_NEIGHBOUR_DISTANCE, fill=None))
 
     def remove_predators(self):
         self.flock_controller.predators = []
@@ -125,14 +126,15 @@ class Gui(tk.Tk):
         for i in range(len(self.boid_drawings)):
             boid = self.flock_controller.boids[i]
             self.canvas.coords(self.boid_drawings[i], boid.x - BOID_RADIUS, boid.y - BOID_RADIUS, boid.x + BOID_RADIUS, boid.y + BOID_RADIUS)
-            self.canvas.coords(self.boid_direction_drawings[i], boid.x, boid.y, boid.x + boid.velocity_x*300, boid.y + boid.velocity_y*300)
+            self.canvas.coords(self.boid_direction_drawings[i], boid.x, boid.y, boid.x + (boid.velocity_x/float(MAX_VELOCITY))*NEIGHBOUR_DISTANCE, boid.y + (boid.velocity_y/float(MAX_VELOCITY))*NEIGHBOUR_DISTANCE)
             if self.draw_neighbourhood:
                 self.canvas.coords(self.boid_neighbourhood_drawings[i], boid.x - NEIGHBOUR_DISTANCE, boid.y - NEIGHBOUR_DISTANCE, boid.x + NEIGHBOUR_DISTANCE, boid.y + NEIGHBOUR_DISTANCE)
         for j in range(len(self.predator_drawings)):
             pred = self.flock_controller.predators[j]
             self.canvas.coords(self.predator_drawings[j], pred.x - PREDATOR_RADIUS, pred.y - PREDATOR_RADIUS, pred.x + PREDATOR_RADIUS, pred.y + PREDATOR_RADIUS)
-            self.canvas.coords(self.predator_direction_drawings[j], pred.x, pred.y, pred.x + pred.velocity_x*300, pred.y + pred.velocity_y*300)
-            self.canvas.coords(self.predator_neighbourhood_drawings[j], pred.x - PREDATOR_NEIGHBOUR_DISTANCE, pred.y - PREDATOR_NEIGHBOUR_DISTANCE, pred.x + PREDATOR_NEIGHBOUR_DISTANCE, pred.y + PREDATOR_NEIGHBOUR_DISTANCE)
+            self.canvas.coords(self.predator_direction_drawings[j], pred.x, pred.y, pred.x + (pred.velocity_x/float(MAX_PREDATOR_VELOCITY))* PREDATOR_NEIGHBOUR_DISTANCE, pred.y + (pred.velocity_x/float(MAX_PREDATOR_VELOCITY))* PREDATOR_NEIGHBOUR_DISTANCE)
+            if self.draw_neighbourhood:
+                self.canvas.coords(self.predator_neighbourhood_drawings[j], pred.x - PREDATOR_NEIGHBOUR_DISTANCE, pred.y - PREDATOR_NEIGHBOUR_DISTANCE, pred.x + PREDATOR_NEIGHBOUR_DISTANCE, pred.y + PREDATOR_NEIGHBOUR_DISTANCE)
         
 
     def run_simulation(self):
