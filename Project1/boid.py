@@ -41,6 +41,8 @@ class Boid:
         sum_pos_y = 0
         sum_velocity_x = 0
         sum_velocity_y = 0
+        closest_pos = (0, 0)
+        shortest_distance = float('inf')
         for potential_neighbour in boids:
             if potential_neighbour != self:
                 distance_to_neighbour = self.get_distance_to_other(potential_neighbour)
@@ -50,8 +52,11 @@ class Boid:
                     sum_pos_y += potential_neighbour.y
                     sum_velocity_x += potential_neighbour.velocity_x
                     sum_velocity_y += potential_neighbour.velocity_y
+                    if distance_to_neighbour < shortest_distance:
+                        shortest_distance = distance_to_neighbour
+                        closest_pos = (potential_neighbour.x, potential_neighbour.y)
         if not neighbours:
-            return [], (0, 0), (0, 0)
+            return [], (0, 0), (0, 0), (0, 0)
         avg_pos = (int(sum_pos_x/len(neighbours)), int(sum_pos_y/len(neighbours)))
         avg_velocity = (int(sum_velocity_x/len(neighbours)), int(sum_velocity_y/(len(neighbours))))
-        return neighbours, avg_pos, avg_velocity
+        return neighbours, avg_pos, avg_velocity, closest_pos

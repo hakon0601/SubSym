@@ -3,13 +3,15 @@ import Tkinter as tk
 
 SCREEN_WIDTH = 1600
 SCREEN_HEIGHT = 700
-NR_OF_BOIDS = 1
-BOID_RADIUS = 8
-PREDATOR_RADIUS = 20
-NEIGHBOUR_DISTANCE = BOID_RADIUS*10
+NR_OF_BOIDS = 50
+BOID_RADIUS = 6
+PREDATOR_RADIUS = 8
+NEIGHBOUR_DISTANCE = BOID_RADIUS*15
 PREDATOR_NEIGHBOUR_DISTANCE = PREDATOR_RADIUS*10
 MAX_VELOCITY = 20
 MAX_PREDATOR_VELOCITY = 10
+
+# Good values for Sep = 150, Align = 100, Coh = 500
 
 class Gui(tk.Tk):
     def __init__(self, delay, draw_neighbourhood=True, *args, **kwargs):
@@ -18,14 +20,14 @@ class Gui(tk.Tk):
         self.draw_neighbourhood = draw_neighbourhood
         self.title("Boids")
 
-        self.canvas = tk.Canvas(self, width=SCREEN_WIDTH, height=SCREEN_HEIGHT, background='white', borderwidth=0, highlightthickness=0)
+        self.canvas = tk.Canvas(self, width=SCREEN_WIDTH, height=SCREEN_HEIGHT, background='white', borderwidth=0)
         self.canvas.pack(side="top", fill="both", expand="true")
         self.create_sliders()
         self.create_menu()
 
-        self.boid_drawings = {}
-        self.boid_neighbourhood_drawings = {}
-        self.boid_direction_drawings = {}
+        self.boid_drawings = []
+        self.boid_neighbourhood_drawings = []
+        self.boid_direction_drawings = []
         self.obstacle_drawings = []
         self.predator_drawings = []
         self.predator_direction_drawings = []
@@ -34,7 +36,14 @@ class Gui(tk.Tk):
         self.bind('<space>', self.toggle_pause)
         self.bind('<,>', self.decrease_simulation_speed)
         self.bind('<.>', self.increase_simulation_speed)
-        self.flock_controller = FlockControl(screen_size=(SCREEN_WIDTH, SCREEN_HEIGHT), boid_radius=BOID_RADIUS, nr_of_boids=NR_OF_BOIDS, max_velocity=MAX_VELOCITY, max_predator_velocity=MAX_PREDATOR_VELOCITY, neighbour_distance=NEIGHBOUR_DISTANCE, predator_radius=PREDATOR_RADIUS, predator_neighbour_distance=PREDATOR_NEIGHBOUR_DISTANCE)
+        self.flock_controller = FlockControl(screen_size=(SCREEN_WIDTH, SCREEN_HEIGHT),
+                                             boid_radius=BOID_RADIUS,
+                                             nr_of_boids=NR_OF_BOIDS,
+                                             max_velocity=MAX_VELOCITY,
+                                             max_predator_velocity=MAX_PREDATOR_VELOCITY,
+                                             neighbour_distance=NEIGHBOUR_DISTANCE,
+                                             predator_radius=PREDATOR_RADIUS,
+                                             predator_neighbour_distance=PREDATOR_NEIGHBOUR_DISTANCE)
         self.draw_board()
         self.run_simulation()
 
@@ -80,10 +89,10 @@ class Gui(tk.Tk):
 
     def add_boid(self):
         boid = self.flock_controller.add_boid()
-        self.boid_drawings[len(self.flock_controller.boids) - 1] = self.canvas.create_oval(boid.x - BOID_RADIUS, boid.y - BOID_RADIUS, boid.x + BOID_RADIUS, boid.y + BOID_RADIUS, fill='blue', tags='rect')
-        self.boid_direction_drawings[len(self.flock_controller.boids) - 1] = self.canvas.create_line(boid.x, boid.y, boid.x + boid.velocity_x*3, boid.y + boid.velocity_y*3, width=2)
+        self.boid_drawings.append(self.canvas.create_oval(boid.x - BOID_RADIUS, boid.y - BOID_RADIUS, boid.x + BOID_RADIUS, boid.y + BOID_RADIUS, fill='blue', tags='rect'))
+        self.boid_direction_drawings.append(self.canvas.create_line(boid.x, boid.y, boid.x + boid.velocity_x*3, boid.y + boid.velocity_y*3, width=2))
         if self.draw_neighbourhood:
-            self.boid_neighbourhood_drawings[len(self.flock_controller.boids) - 1] = self.canvas.create_oval(boid.x - NEIGHBOUR_DISTANCE, boid.y - NEIGHBOUR_DISTANCE, boid.x + NEIGHBOUR_DISTANCE, boid.y + NEIGHBOUR_DISTANCE, fill=None)
+            self.boid_neighbourhood_drawings.append(self.canvas.create_oval(boid.x - NEIGHBOUR_DISTANCE, boid.y - NEIGHBOUR_DISTANCE, boid.x + NEIGHBOUR_DISTANCE, boid.y + NEIGHBOUR_DISTANCE, fill=None))
 
     def add_obstacle(self):
         obs = self.flock_controller.add_obastacle()
@@ -94,6 +103,8 @@ class Gui(tk.Tk):
     def remove_obstacles(self):
         self.flock_controller.obstacles = []
         for i in range(len(self.obstacle_drawings)):
+            s = "addfs"
+            s.split()
             self.canvas.delete(self.obstacle_drawings[i])
         self.obstacle_drawings = []
 
@@ -117,10 +128,10 @@ class Gui(tk.Tk):
     def draw_board(self):
         for i in range(len(self.flock_controller.boids)):
             boid = self.flock_controller.boids[i]
-            self.boid_drawings[i] = self.canvas.create_oval(boid.x - BOID_RADIUS, boid.y - BOID_RADIUS, boid.x + BOID_RADIUS, boid.y + BOID_RADIUS, fill='blue', tags='rect')
-            self.boid_direction_drawings[i] = self.canvas.create_line(boid.x, boid.y, boid.x + boid.velocity_x*3, boid.y + boid.velocity_y*3, width=2)
+            self.boid_drawings.append(self.canvas.create_oval(boid.x - BOID_RADIUS, boid.y - BOID_RADIUS, boid.x + BOID_RADIUS, boid.y + BOID_RADIUS, fill='blue', tags='rect'))
+            self.boid_direction_drawings.append(self.canvas.create_line(boid.x, boid.y, boid.x + boid.velocity_x*3, boid.y + boid.velocity_y*3, width=2))
             if self.draw_neighbourhood:
-                self.boid_neighbourhood_drawings[i] = self.canvas.create_oval(boid.x - NEIGHBOUR_DISTANCE, boid.y - NEIGHBOUR_DISTANCE, boid.x + NEIGHBOUR_DISTANCE, boid.y + NEIGHBOUR_DISTANCE, fill=None)
+                self.boid_neighbourhood_drawings.append(self.canvas.create_oval(boid.x - NEIGHBOUR_DISTANCE, boid.y - NEIGHBOUR_DISTANCE, boid.x + NEIGHBOUR_DISTANCE, boid.y + NEIGHBOUR_DISTANCE, fill=None))
 
     def update_board(self):
         for i in range(len(self.boid_drawings)):
@@ -141,6 +152,7 @@ class Gui(tk.Tk):
         if not self.pause:
             self.flock_controller.update_boids()
             self.flock_controller.update_predators()
+            self.flock_controller.move_boids_and_predators()
             self.update_board()
         self.after(self.delay, lambda: self.run_simulation())
 
