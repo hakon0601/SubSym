@@ -3,15 +3,14 @@ import Tkinter as tk
 
 SCREEN_WIDTH = 1600
 SCREEN_HEIGHT = 700
-NR_OF_BOIDS = 50
+NR_OF_BOIDS = 100
 BOID_RADIUS = 6
 PREDATOR_RADIUS = 8
 NEIGHBOUR_DISTANCE = BOID_RADIUS*15
-PREDATOR_NEIGHBOUR_DISTANCE = PREDATOR_RADIUS*10
+PREDATOR_NEIGHBOUR_DISTANCE = PREDATOR_RADIUS*15
 MAX_VELOCITY = 20
 MAX_PREDATOR_VELOCITY = 10
 
-# Good values for Sep = 150, Align = 100, Coh = 500
 
 class Gui(tk.Tk):
     def __init__(self, delay, draw_neighbourhood=True, *args, **kwargs):
@@ -103,8 +102,6 @@ class Gui(tk.Tk):
     def remove_obstacles(self):
         self.flock_controller.obstacles = []
         for i in range(len(self.obstacle_drawings)):
-            s = "addfs"
-            s.split()
             self.canvas.delete(self.obstacle_drawings[i])
         self.obstacle_drawings = []
 

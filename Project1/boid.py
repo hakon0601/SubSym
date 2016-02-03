@@ -1,6 +1,4 @@
-from random import randrange
 from math import sqrt, pi, sin, cos, atan2
-
 
 
 class Boid:
@@ -15,16 +13,6 @@ class Boid:
         self.x = (self.x + self.velocity_x) % screen_size[0]
         self.y = (self.y + self.velocity_y) % screen_size[1]
 
-    # Todo not in use
-    def get_direction_point(self):
-        direction_rads = atan2(self.velocity_y, self.velocity_x)
-        direction_degrees = direction_rads * 180 / pi
-        print "direction: ", direction_degrees
-        print direction_degrees + 10
-        dir_x = int(self.x + (cos(direction_rads) * self.radius))
-        dir_y = int(self.y + (sin(direction_rads) * self.radius))
-        return (dir_x, dir_y)
-
     def get_distance_to_other(self, other):
         return sqrt((self.x - other.x)**2 + (self.y - other.y)**2)
 
@@ -34,7 +22,7 @@ class Boid:
     def get_velocity(self):
         return sqrt(self.velocity_x**2 + self.velocity_y**2)
 
-
+    # Retrieve all neighbours and their average position and velocity. Also returns the position of the closest neighbour
     def get_neighbours(self, boids, neighbour_distance):
         neighbours = []
         sum_pos_x = 0
