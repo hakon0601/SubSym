@@ -154,7 +154,7 @@ class Gui(tk.Tk):
         self.after(self.delay, lambda: self.run_simulation())
 
 if __name__ == "__main__":
-    app = Gui(delay=50, draw_neighbourhood=True)
+    app = Gui(delay=50, draw_neighbourhood=False)
     app.mainloop()
 
 

@@ -184,14 +184,17 @@ class FlockControl:
 
     # Decrease speed if it is to high or increase it if it is to low
     def normalize_speed(self, boid, max_velocity):
-        if boid.velocity_x > max_velocity/2 or (boid.velocity_x <= 0 and boid.velocity_x > -max_velocity / 5):
+        if boid.velocity_x > max_velocity/1.3: #or (boid.velocity_x <= 0 and boid.velocity_x > -max_velocity / 5):
             boid.velocity_x -= 1
-        elif boid.velocity_x < -max_velocity/2 or (boid.velocity_x >= 0 and boid.velocity_x < max_velocity / 5):
+        elif boid.velocity_x < -max_velocity/1.3: #or (boid.velocity_x >= 0 and boid.velocity_x < max_velocity / 5):
             boid.velocity_x += 1
-        if boid.velocity_y > max_velocity/2 or (boid.velocity_y <= 0 and boid.velocity_y > -max_velocity / 5):
+        if boid.velocity_y > max_velocity/1.3: #or (boid.velocity_y <= 0 and boid.velocity_y > -max_velocity / 5):
             boid.velocity_y -= 1
-        elif boid.velocity_y < -max_velocity/2 or (boid.velocity_y >= 0 and boid.velocity_y < max_velocity / 5):
+        elif boid.velocity_y < -max_velocity/1.3: #or (boid.velocity_y >= 0 and boid.velocity_y < max_velocity / 5):
             boid.velocity_y += 1
+        if boid.velocity_x == 0 and boid.velocity_y == 0:
+            boid.velocity_x = randrange(-2, 2)
+            boid.velocity_y = randrange(-2, 2)
 
 
 
