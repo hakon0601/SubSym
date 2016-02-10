@@ -14,15 +14,15 @@ class Population:
         self.avg_fitness = 0.0
 
     def set_parameters(self, genotype_pool_size, adult_pool_size,
-                       genotype_length, phenotype_length, discard_old_adults,
-                       global_parent_competition, crossover_rate, points_of_crossover,
+                       genotype_length, phenotype_length, adult_selection_protocol,
+                       parent_selection_protocol, crossover_rate, points_of_crossover,
                        mutation_rate_individual, mutation_rate_component):
         self.genotype_pool_size = genotype_pool_size
         self.adult_pool_size = adult_pool_size
         self.genotype_length = genotype_length
         self.phenotype_length = phenotype_length
-        self.discard_old_adults = discard_old_adults
-        self.global_parent_competition = global_parent_competition
+        self.adult_selection_protocol = adult_selection_protocol
+        self.parent_selection_protocol = parent_selection_protocol
         self.crossover_rate = crossover_rate
         self.points_of_crossover = points_of_crossover
         self.mutation_rate_individual = mutation_rate_individual
@@ -44,10 +44,12 @@ class Population:
             phenotype.update_fitness_value()
 
     def refill_adult_pool(self):
-        if self.discard_old_adults:
+        if self.adult_selection_protocol == 1:  # Full
             self.phenotype_children_pool.sort(reverse=True)
             self.phenotype_adult_pool = self.phenotype_children_pool[0:self.adult_pool_size]
-        else:
+        elif self.adult_selection_protocol == 2:  # over-production
+            raise NotImplementedError
+        elif self.adult_selection_protocol == 3:  # mixing:
             self.phenotype_adult_pool = sorted((self.phenotype_children_pool + self.phenotype_adult_pool), reverse=True)[0:self.adult_pool_size]
 
     def scale_fitness_of_adult_pool(self):
@@ -56,17 +58,37 @@ class Population:
         for adult in self.phenotype_adult_pool:
             adult.fitness_value_scaled = adult.fitness_value/total_sum
 
-    def chose_parents_from_competition(self):
-        if self.global_parent_competition:
-            parent1 = self.chose_random_scaled_parent()
-            while True:
-                parent2 = self.chose_random_scaled_parent()
-                if parent1 != parent2:
-                    break
-            return parent1, parent2
-        else:
-            # TODO implement tournaments
-            raise NotImplementedError
+    def select_parents_and_fill_genome_pool(self):
+        self.genotype_pool = []
+        for _ in range(self.genotype_pool_size//2):
+            if self.parent_selection_protocol == 1:  # Fitness Proportionate
+                parent1, parent2 = self.chose_parents_fitness_proportionate()
+            elif self.parent_selection_protocol == 2:  # Sigma-scaling
+                parent1, parent2 = self.chose_parents_sigma_scaling()
+            elif self.parent_selection_protocol == 3:  # Tournament Selection
+                parent1, parent2 = self.chose_parents_tournament_selection()
+            elif self.parent_selection_protocol == 4:
+                parent1, parent2 = self.chose_parents_4th_selection()
+            child1, child2 = self.mate_parents(parent1, parent2)
+            self.genotype_pool.append(child1)
+            self.genotype_pool.append(child2)
+
+    def chose_parents_fitness_proportionate(self):
+        parent1 = self.chose_random_scaled_parent()
+        while True:
+            parent2 = self.chose_random_scaled_parent()
+            if parent1 != parent2:
+                break
+        return parent1, parent2
+
+    def chose_parents_sigma_scaling(self):
+        raise NotImplementedError
+
+    def chose_parents_tournament_selection(self):
+        raise NotImplementedError
+
+    def chose_parents_4th_selection(self):
+        raise NotImplementedError
 
     def chose_random_scaled_parent(self):
         r = random()
@@ -75,14 +97,6 @@ class Population:
             piece += adult.fitness_value_scaled
             if r <= piece:
                 return adult
-
-    def select_parents_and_fill_genome_pool(self):
-        self.genotype_pool = []
-        for _ in range(self.genotype_pool_size//2):
-            parent1, parent2 = self.chose_parents_from_competition()
-            child1, child2 = self.mate_parents(parent1, parent2)
-            self.genotype_pool.append(child1)
-            self.genotype_pool.append(child2)
 
     def mate_parents(self, parent1, parent2):
         r = random()

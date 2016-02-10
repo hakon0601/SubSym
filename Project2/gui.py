@@ -1,4 +1,5 @@
 import Tkinter as tk
+import matplotlib.pyplot as plt
 
 from population import Population
 
@@ -7,8 +8,8 @@ GENOTYPE_POOL_SIZE = 10
 ADULT_POOL_SIZE = 6
 GENOTYPE_LENGTH = 20
 PHENOTYPE_LENGTH = 20
-DISCARD_OLD_ADULTS = False
-GLOBAL_PARENT_COMPETITION = True
+ADULT_SELECTION_PROTOCOL = 1
+PARENT_SELECTION_PROTOCOL = 1
 
 
 CROSSOVER_RATE = 0.5  # When two parents have a match, they have a X% chance of being recombined.
@@ -16,6 +17,8 @@ CROSSOVER_RATE = 0.5  # When two parents have a match, they have a X% chance of 
 POINTS_OF_CROSSOVER = 5
 MUTATION_RATE_INDIVIDUAL = 0.01  # X% av genomes are modified in ONE of their component
 MUTATION_RATE_COMPONENT = 0.05  # Each component has a chance of mutating
+
+ZERO_THRESHOLD = 4
 
 
 class Gui(tk.Tk):
@@ -25,6 +28,8 @@ class Gui(tk.Tk):
         self.generations = generations
         self.current_generation = 0
 
+        self.fitness_log_average = []
+        self.fitness_log_best = []
         self.population = None
         self.build_parameter_menu()
 
@@ -62,16 +67,19 @@ class Gui(tk.Tk):
         self.horizontal_slider_8.set(self.generations)
         self.horizontal_slider_8.pack()
 
-        self.radio_1_value = tk.BooleanVar()
-        self.radio_1_value.set(DISCARD_OLD_ADULTS)
-        tk.Label(self, text="Discard Old Adults").pack()
-        tk.Radiobutton(self, text="Yes", variable=self.radio_1_value, value=True).pack()
-        tk.Radiobutton(self, text="No", variable=self.radio_1_value, value=False).pack()
-        self.radio_2_value = tk.BooleanVar()
-        self.radio_2_value.set(GLOBAL_PARENT_COMPETITION)
-        tk.Label(self, text="Global Parent Competition").pack()
-        tk.Radiobutton(self, text="Yes", variable=self.radio_2_value, value=True).pack()
-        tk.Radiobutton(self, text="No", variable=self.radio_2_value, value=False).pack()
+        self.adult_selection_protocol = tk.IntVar()
+        self.adult_selection_protocol.set(ADULT_SELECTION_PROTOCOL)
+        tk.Label(self, text="Adult Selection Protocol").pack(anchor=tk.W)
+        tk.Radiobutton(self, text="Full", variable=self.adult_selection_protocol, value=1).pack(anchor=tk.W)
+        tk.Radiobutton(self, text="Over Production", variable=self.adult_selection_protocol, value=2).pack(anchor=tk.W)
+        tk.Radiobutton(self, text="Mixing", variable=self.adult_selection_protocol, value=3).pack(anchor=tk.W)
+        self.radio_2_value = tk.IntVar()
+        self.radio_2_value.set(PARENT_SELECTION_PROTOCOL)
+        tk.Label(self, text="Parent Selection Protocol").pack(anchor=tk.W)
+        tk.Radiobutton(self, text="Fitness Proportionate", variable=self.radio_2_value, value=1).pack(anchor=tk.W)
+        tk.Radiobutton(self, text="Sigma-scaling", variable=self.radio_2_value, value=2).pack(anchor=tk.W)
+        tk.Radiobutton(self, text="Tournament selection", variable=self.radio_2_value, value=3).pack(anchor=tk.W)
+        tk.Radiobutton(self, text="4th Selection Protocol", variable=self.radio_2_value, value=4).pack(anchor=tk.W)
 
         start_button = tk.Button(self, text="Start", width=20, command=self.start_EA)
         start_button.pack()
@@ -81,15 +89,22 @@ class Gui(tk.Tk):
         self.population.set_parameters(genotype_pool_size=self.horizontal_slider_1.get(),
                                        adult_pool_size=self.horizontal_slider_2.get(),
                                        genotype_length=self.horizontal_slider_3.get(),
-                                       phenotype_length=self.horizontal_slider_3.get(), # Not a single slider
-                                       discard_old_adults=self.radio_1_value.get(),
-                                       global_parent_competition=self.radio_2_value.get(),
+                                       phenotype_length=self.horizontal_slider_3.get(),  # Not a single slider
+                                       adult_selection_protocol=self.adult_selection_protocol.get(),
+                                       parent_selection_protocol=self.radio_2_value.get(),
                                        crossover_rate=self.horizontal_slider_4.get(),
                                        mutation_rate_individual=self.horizontal_slider_5.get(),
                                        mutation_rate_component=self.horizontal_slider_6.get(),
                                        points_of_crossover=self.horizontal_slider_7.get()
                                        )
         self.population.initialize_genotypes()
+        self.generations = self.horizontal_slider_8.get()
+        self.current_generation = 0
+        self.fitness_log_average = []
+        self.fitness_log_best = []
+
+
+
         self.run_EA()
 
     def run_EA(self):
@@ -100,16 +115,31 @@ class Gui(tk.Tk):
         self.population.scale_fitness_of_adult_pool()
         self.population.select_parents_and_fill_genome_pool()
         #print "Best fitness value:", self.population.phenotype_adult_pool[0].fitness_value
-        print "Average fitness in adult pool:", self.population.avg_fitness
+        #print "Average fitness in adult pool:", self.population.avg_fitness
+        print "Current Generation:", self.current_generation
+        self.fitness_log_average.append(self.population.avg_fitness)
+        self.fitness_log_best.append(self.population.phenotype_adult_pool[0].fitness_value)
         self.current_generation += 1
-        if self.current_generation < self.horizontal_slider_8.get() and self.population.avg_fitness < 1.0:
+        if self.current_generation < self.horizontal_slider_8.get() and \
+                        self.population.phenotype_adult_pool[0].fitness_value < 1.0:
             self.after(self.delay, lambda: self.run_EA())
         else:
             #TODO end rapport
             print "Best fitness value:", self.population.phenotype_adult_pool[0].fitness_value
             print "Average fitness in adult pool:", self.population.avg_fitness
-            pass
+            print "Generation", self.current_generation
+            self.plot_data()
 
+    def plot_data(self):
+        plt.figure(1)
+        plt.subplot(211)
+        plt.plot(self.fitness_log_average)
+        plt.legend(['x = Generations\ny = Average fitness in adult pool'], loc='lower right')
+
+        plt.subplot(212)
+        plt.plot(self.fitness_log_best)
+        plt.legend(['x = Generations\ny = Best fitness in adult pool'], loc='lower right')
+        plt.show()
 
 if __name__ == "__main__":
     app = Gui(delay=1, generations=1000)
