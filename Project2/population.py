@@ -5,29 +5,31 @@ from copy import copy
 from genotype import Genotype
 from phenotype import PhenotypeOneMax
 
-GENOTYPE_POOL_SIZE = 10
-ADULT_POOL_SIZE = 6
-GENOTYPE_LENGTH = 50
-PHENOTYPE_LENGTH = 50
-DISCARD_OLD_ADULTS = False
-GLOBAL_PARENT_COMPETITION = True
-
-
-CROSSOVER_RATE = 0.2 # When two parents have a match, they have a X% chance of being recombined.
-# When they are not combined they are simply copied (with mutations)
-POINTS_OF_CROSSOVER = 3
-MUTATION_RATE_INDIVIDUAL = 0.01 # X% av genomes are modified in ONE of their component
-MUTATION_RATE_COMPONENT = 0.05 # Each component has a chance of mutating
-
 
 class Population:
     def __init__(self):
-        self.genotype_pool = self.initialize_genotypes()
+        self.genotype_pool = []
         self.phenotype_children_pool = []
         self.phenotype_adult_pool = []
+        self.avg_fitness = 0.0
+
+    def set_parameters(self, genotype_pool_size, adult_pool_size,
+                       genotype_length, phenotype_length, discard_old_adults,
+                       global_parent_competition, crossover_rate, points_of_crossover,
+                       mutation_rate_individual, mutation_rate_component):
+        self.genotype_pool_size = genotype_pool_size
+        self.adult_pool_size = adult_pool_size
+        self.genotype_length = genotype_length
+        self.phenotype_length = phenotype_length
+        self.discard_old_adults = discard_old_adults
+        self.global_parent_competition = global_parent_competition
+        self.crossover_rate = crossover_rate
+        self.points_of_crossover = points_of_crossover
+        self.mutation_rate_individual = mutation_rate_individual
+        self.mutation_rate_component = mutation_rate_component
 
     def initialize_genotypes(self):
-        return [Genotype(GENOTYPE_LENGTH, initial_config=True) for _ in range(GENOTYPE_POOL_SIZE)]
+        self.genotype_pool = [Genotype(self.genotype_length, initial_config=True) for _ in range(self.genotype_pool_size)]
 
     def develop_all_genotypes_to_phenotypes(self):
         self.phenotype_children_pool = []
@@ -42,19 +44,20 @@ class Population:
             phenotype.update_fitness_value()
 
     def refill_adult_pool(self):
-        if DISCARD_OLD_ADULTS:
+        if self.discard_old_adults:
             self.phenotype_children_pool.sort(reverse=True)
-            self.phenotype_adult_pool = self.phenotype_children_pool[0:ADULT_POOL_SIZE]
+            self.phenotype_adult_pool = self.phenotype_children_pool[0:self.adult_pool_size]
         else:
-            self.phenotype_adult_pool = sorted((self.phenotype_children_pool + self.phenotype_adult_pool), reverse=True)[0:ADULT_POOL_SIZE]
+            self.phenotype_adult_pool = sorted((self.phenotype_children_pool + self.phenotype_adult_pool), reverse=True)[0:self.adult_pool_size]
 
     def scale_fitness_of_adult_pool(self):
         total_sum = sum([phenotype.fitness_value for phenotype in self.phenotype_adult_pool])
+        self.avg_fitness = total_sum/self.adult_pool_size
         for adult in self.phenotype_adult_pool:
             adult.fitness_value_scaled = adult.fitness_value/total_sum
 
     def chose_parents_from_competition(self):
-        if GLOBAL_PARENT_COMPETITION:
+        if self.global_parent_competition:
             parent1 = self.chose_random_scaled_parent()
             while True:
                 parent2 = self.chose_random_scaled_parent()
@@ -75,7 +78,7 @@ class Population:
 
     def select_parents_and_fill_genome_pool(self):
         self.genotype_pool = []
-        for _ in range(GENOTYPE_POOL_SIZE//2):
+        for _ in range(self.genotype_pool_size//2):
             parent1, parent2 = self.chose_parents_from_competition()
             child1, child2 = self.mate_parents(parent1, parent2)
             self.genotype_pool.append(child1)
@@ -83,29 +86,29 @@ class Population:
 
     def mate_parents(self, parent1, parent2):
         r = random()
-        if r <= CROSSOVER_RATE:
+        if r <= self.crossover_rate:
             child1_bit_vector, child2_bit_vector = self.create_crossover_bit_vector(parent1, parent2)
-            child1 = Genotype(GENOTYPE_LENGTH, bit_vector=child1_bit_vector)
-            child2 = Genotype(GENOTYPE_LENGTH, bit_vector=child2_bit_vector)
+            child1 = Genotype(self.genotype_length, bit_vector=child1_bit_vector)
+            child2 = Genotype(self.genotype_length, bit_vector=child2_bit_vector)
         else:
-            child1 = Genotype(GENOTYPE_LENGTH, bit_vector=parent1.components)
-            child2 = Genotype(GENOTYPE_LENGTH, bit_vector=parent2.components)
-        child1.mutate_individual(individual_mutation_rate=MUTATION_RATE_INDIVIDUAL)
-        child2.mutate_individual(individual_mutation_rate=MUTATION_RATE_INDIVIDUAL)
+            child1 = Genotype(self.genotype_length, bit_vector=copy(parent1.components))
+            child2 = Genotype(self.genotype_length, bit_vector=copy(parent2.components))
+        child1.mutate_individual(individual_mutation_rate=self.mutation_rate_individual)
+        child2.mutate_individual(individual_mutation_rate=self.mutation_rate_individual)
         return child1, child2
 
     def create_crossover_bit_vector(self, parent1, parent2):
-        component_bulk_size = GENOTYPE_LENGTH//(POINTS_OF_CROSSOVER + 1)
+        component_bulk_size = self.genotype_length//(self.points_of_crossover + 1)
         child1_bit_vector = []
         child2_bit_vector = []
-        for i in range(POINTS_OF_CROSSOVER):
+        for i in range(self.points_of_crossover):
             if i % 2 == 0:
                 child1_bit_vector += copy(parent1.components[i * component_bulk_size:(i + 1) * component_bulk_size])
                 child2_bit_vector += copy(parent2.components[i * component_bulk_size:(i + 1) * component_bulk_size])
             else:
                 child1_bit_vector += copy(parent2.components[i * component_bulk_size:(i + 1) * component_bulk_size])
                 child2_bit_vector += copy(parent1.components[i * component_bulk_size:(i + 1) * component_bulk_size])
-        if POINTS_OF_CROSSOVER % 2 == 0:
+        if self.points_of_crossover % 2 == 0:
             child1_bit_vector += copy(parent1.components[i * component_bulk_size:(i + 1) * component_bulk_size])
             child2_bit_vector += copy(parent2.components[i * component_bulk_size:(i + 1) * component_bulk_size])
         else:
