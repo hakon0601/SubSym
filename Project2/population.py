@@ -3,7 +3,7 @@ from random import random
 from copy import copy
 
 from genotype import Genotype
-from phenotype import PhenotypeOneMax
+from phenotype import PhenotypeOneMax, PhenotypeLolzPrefix, PhenotypeSurprisingSequence
 
 
 class Population:
@@ -16,7 +16,7 @@ class Population:
     def set_parameters(self, genotype_pool_size, adult_pool_size,
                        genotype_length, phenotype_length, adult_selection_protocol,
                        parent_selection_protocol, crossover_rate, points_of_crossover,
-                       mutation_rate_individual, mutation_rate_component):
+                       mutation_rate, mutation_protocol, zero_threshold, symbol_set_size, problem):
         self.genotype_pool_size = genotype_pool_size
         self.adult_pool_size = adult_pool_size
         self.genotype_length = genotype_length
@@ -25,8 +25,11 @@ class Population:
         self.parent_selection_protocol = parent_selection_protocol
         self.crossover_rate = crossover_rate
         self.points_of_crossover = points_of_crossover
-        self.mutation_rate_individual = mutation_rate_individual
-        self.mutation_rate_component = mutation_rate_component
+        self.mutation_rate = mutation_rate
+        self.mutation_protocol = mutation_protocol
+        self.zero_threshold = zero_threshold
+        self.symbol_set_size = symbol_set_size
+        self.problem = problem
 
     def initialize_genotypes(self):
         self.genotype_pool = [Genotype(self.genotype_length, initial_config=True) for _ in range(self.genotype_pool_size)]
@@ -37,7 +40,14 @@ class Population:
             self.phenotype_children_pool.append(self.develop_genotype_to_phenotype(genotype))
 
     def develop_genotype_to_phenotype(self, genotype):
-        return PhenotypeOneMax(genotype.bit_vector)
+        if self.problem == 1:
+            return PhenotypeOneMax(genotype)
+        elif self.problem == 2:
+            return PhenotypeLolzPrefix(genotype, zero_threshold=self.zero_threshold)
+        elif self.problem == 3:
+            return PhenotypeSurprisingSequence(genotype, symbol_set_size=self.symbol_set_size, local=True)
+        elif self.problem == 4:
+            return PhenotypeSurprisingSequence(genotype, symbol_set_size=self.symbol_set_size)
 
     def do_fitness_testing(self):
         for phenotype in self.phenotype_children_pool:
@@ -105,10 +115,10 @@ class Population:
             child1 = Genotype(self.genotype_length, bit_vector=child1_bit_vector)
             child2 = Genotype(self.genotype_length, bit_vector=child2_bit_vector)
         else:
-            child1 = Genotype(self.genotype_length, bit_vector=copy(parent1.components))
-            child2 = Genotype(self.genotype_length, bit_vector=copy(parent2.components))
-        child1.mutate_individual(individual_mutation_rate=self.mutation_rate_individual)
-        child2.mutate_individual(individual_mutation_rate=self.mutation_rate_individual)
+            child1 = Genotype(self.genotype_length, bit_vector=copy(parent1.parent.bit_vector))
+            child2 = Genotype(self.genotype_length, bit_vector=copy(parent2.parent.bit_vector))
+        child1.mutate(mutation_rate=self.mutation_rate, mutation_protocol=self.mutation_protocol)
+        child2.mutate(mutation_rate=self.mutation_rate, mutation_protocol=self.mutation_protocol)
         return child1, child2
 
     def create_crossover_bit_vector(self, parent1, parent2):
@@ -117,15 +127,15 @@ class Population:
         child2_bit_vector = []
         for i in range(self.points_of_crossover):
             if i % 2 == 0:
-                child1_bit_vector += copy(parent1.components[i * component_bulk_size:(i + 1) * component_bulk_size])
-                child2_bit_vector += copy(parent2.components[i * component_bulk_size:(i + 1) * component_bulk_size])
+                child1_bit_vector += copy(parent1.parent.bit_vector[i * component_bulk_size:(i + 1) * component_bulk_size])
+                child2_bit_vector += copy(parent2.parent.bit_vector[i * component_bulk_size:(i + 1) * component_bulk_size])
             else:
-                child1_bit_vector += copy(parent2.components[i * component_bulk_size:(i + 1) * component_bulk_size])
-                child2_bit_vector += copy(parent1.components[i * component_bulk_size:(i + 1) * component_bulk_size])
+                child1_bit_vector += copy(parent2.parent.bit_vector[i * component_bulk_size:(i + 1) * component_bulk_size])
+                child2_bit_vector += copy(parent1.parent.bit_vector[i * component_bulk_size:(i + 1) * component_bulk_size])
         if self.points_of_crossover % 2 == 0:
-            child1_bit_vector += copy(parent1.components[i * component_bulk_size:(i + 1) * component_bulk_size])
-            child2_bit_vector += copy(parent2.components[i * component_bulk_size:(i + 1) * component_bulk_size])
+            child1_bit_vector += copy(parent1.parent.bit_vector[i * component_bulk_size:(i + 1) * component_bulk_size])
+            child2_bit_vector += copy(parent2.parent.bit_vector[i * component_bulk_size:(i + 1) * component_bulk_size])
         else:
-            child1_bit_vector += copy(parent2.components[i * component_bulk_size:(i + 1) * component_bulk_size])
-            child2_bit_vector += copy(parent1.components[i * component_bulk_size:(i + 1) * component_bulk_size])
+            child1_bit_vector += copy(parent2.parent.bit_vector[i * component_bulk_size:(i + 1) * component_bulk_size])
+            child2_bit_vector += copy(parent1.parent.bit_vector[i * component_bulk_size:(i + 1) * component_bulk_size])
         return child1_bit_vector, child2_bit_vector
