@@ -69,17 +69,18 @@ class Population:
             self.phenotype_adult_pool = sorted((self.phenotype_children_pool + self.phenotype_adult_pool), reverse=True)[0:self.adult_pool_size]
 
     def scale_fitness_of_adult_pool(self):
-        fitness_array = [phenotype.fitness_value for phenotype in self.phenotype_adult_pool]
+        # TODO This array can be generated when calculating fitness
+        fitness_array = array([phenotype.fitness_value for phenotype in self.phenotype_adult_pool], dtype=float)
         total_sum = sum(fitness_array)
         self.avg_fitness = total_sum/self.adult_pool_size
+        self.standard_deviation = std(fitness_array)
         if self.parent_selection_protocol == 1:  # Fitness Proportionate
             self.scale_parents_fitness_proportionate(total_sum)
         elif self.parent_selection_protocol == 2:  # Sigma-scaling
-            self.scale_parents_sigma_scaling(fitness_array)
-        elif self.parent_selection_protocol == 4:
-            parent1, parent2 = self.chose_parents_4th_selection()
+            self.scale_parents_sigma_scaling()
 
     def select_parents_and_fill_genome_pool(self):
+        self.scale_fitness_of_adult_pool()
         self.genotype_pool = []
         for _ in range(self.genotype_pool_size//2):
             if self.parent_selection_protocol == 1 or self.parent_selection_protocol == 2:  # Fitness Proportionate or Sigma-scaling using "roulette selection"
@@ -96,16 +97,14 @@ class Population:
         for adult in self.phenotype_adult_pool:
             adult.fitness_value_scaled = adult.fitness_value/total_sum
 
-    def scale_parents_sigma_scaling(self, fitness_array):
-        fitness_np_array = array(fitness_array, dtype=float)
-        standard_fitness_deviation = std(fitness_np_array)
+    def scale_parents_sigma_scaling(self):
         scaled_sum = 0
-        if standard_fitness_deviation < 0.000001:
+        if self.standard_deviation < 0.000001:
             for adult1 in self.phenotype_adult_pool:
-                adult1.fitness_value_scaled = 1/self.adult_pool_size
+                adult1.fitness_value_scaled = 1 / self.adult_pool_size
         else:
             for adult in self.phenotype_adult_pool:
-                exp_val = 1 + ((adult.fitness_value - self.avg_fitness) / (2 * standard_fitness_deviation))
+                exp_val = 1 + ((adult.fitness_value - self.avg_fitness) / (2 * self.standard_deviation))
                 adult.fitness_value_scaled = adult.fitness_value * exp_val
                 scaled_sum += adult.fitness_value_scaled
             for scaled_adult in self.phenotype_adult_pool:

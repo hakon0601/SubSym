@@ -14,7 +14,7 @@ MUTATION_PROTOCOL = 1
 PROBLEM = 1
 CROSSOVER_RATE = 0.5  # When two parents have a match, they have a X% chance of being recombined.
 # When they are not combined they are simply copied (with mutations)
-POINTS_OF_CROSSOVER = 5
+POINTS_OF_CROSSOVER = 2
 MUTATION_RATE = 0.1
 SYMBOL_SET_SIZE = 4
 TOURNAMENT_SLIP_THROUGH_PROBABILITY = 0.2
@@ -180,11 +180,15 @@ class Gui(tk.Tk):
         self.population.develop_all_genotypes_to_phenotypes()
         self.population.do_fitness_testing()
         self.population.refill_adult_pool()
-        self.population.scale_fitness_of_adult_pool()
         self.population.select_parents_and_fill_genome_pool()
         #print "Best fitness value:", self.population.phenotype_adult_pool[0].fitness_value
         #print "Average fitness in adult pool:", self.population.avg_fitness
-        print "Gen:", self.current_generation, "Best fitness value:", self.population.phenotype_adult_pool[0].fitness_value
+        '''
+        print "Gen:", self.current_generation, "Best fitness:", \
+            round(self.population.phenotype_adult_pool[0].fitness_value, 3), "\tAverage fitness:", \
+            round(self.population.avg_fitness, 3), "\tStandard deviation: ", round(self.population.standard_deviation, 3), \
+            "\tBest Phenotype:", self.population.phenotype_adult_pool[0].components
+        '''
         self.fitness_log_average.append(self.population.avg_fitness)
         self.fitness_log_best.append(self.population.phenotype_adult_pool[0].fitness_value)
         self.current_generation += 1
