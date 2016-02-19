@@ -56,13 +56,11 @@ class PhenotypeLolzPrefix(Phenotype):
         return 1.0
 
 
-SYMBOLS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ*!?{}<>@$%&()^"
-
-
 class PhenotypeSurprisingSequence(Phenotype):
-    def __init__(self, genotype, symbol_set_size, local=False):
+    def __init__(self, genotype, symbol_set_size, local=False, target_surprising_sequence_length=5):
         Phenotype.__init__(self)
         self.local = local
+        self.target_surprising_sequence_length = target_surprising_sequence_length
         self.symbol_set_size = symbol_set_size
         self.parent = None
         self.bit_to_symbol_rate = int(ceil(log(self.symbol_set_size, 2)))
@@ -92,10 +90,9 @@ class PhenotypeSurprisingSequence(Phenotype):
                         longest_surprising_sequence = self.components[i:j]
                 else:
                     break
-        #print "longest_surprising_sequence", longest_surprising_sequence
         self.longest_surprising_sequence = longest_surprising_sequence
-        fitness = len(longest_surprising_sequence) / (len(self.parent.bit_vector)/self.bit_to_symbol_rate)
-        return fitness # (3 * self.symbol_set_size)
+        fitness = len(longest_surprising_sequence) / self.target_surprising_sequence_length
+        return fitness
 
     def check_components_for_unsurprising_sequence(self, components):
         frequence_dict = defaultdict(int)
@@ -108,11 +105,3 @@ class PhenotypeSurprisingSequence(Phenotype):
                 if self.local:
                     break
         return True
-
-'''
-import genotype
-b = genotype.Genotype(bit_vector=[1, 1, 0, 1, 0, 1, 1, 1, 0, 1, 1, 0])
-a = PhenotypeSurprisingSequence(b, 4)
-print "Components", a.components
-print "fitness", a.fitness_evaluation()
-'''

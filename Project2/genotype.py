@@ -25,6 +25,3 @@ class Genotype:
                 r = random()
                 if r <= mutation_rate:
                     self.bit_vector[i] = int(not self.bit_vector[i])
-
-    def mutate_component(self):
-        raise NotImplementedError
