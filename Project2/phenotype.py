@@ -4,11 +4,12 @@ from collections import defaultdict
 
 
 class Phenotype:
-    def __init__(self):
+    def __init__(self, genotype):
         self.fitness_value = None
         self.fitness_value_scaled = None
+        self.parent = genotype
 
-    def develop_from_genotype(self, genotype):
+    def develop_from_genotype(self):
         return NotImplementedError
 
     def update_fitness_value(self):
@@ -25,61 +26,54 @@ class Phenotype:
 
 class PhenotypeOneMax(Phenotype):
     def __init__(self, genotype):
-        Phenotype.__init__(self)
-        self.parent = None
-        self.components = self.develop_from_genotype(genotype)
+        Phenotype.__init__(self, genotype)
+        self.components = self.develop_from_genotype()
 
-    def develop_from_genotype(self, genotype):
-        self.parent = genotype
-        return genotype.bit_vector
+    def develop_from_genotype(self):
+        return self.parent.dna_vector
 
     def fitness_evaluation(self):
-        return sum(self.components)/len(self.components)
+        return sum(self.components) / len(self.components)
 
 
 class PhenotypeLolzPrefix(Phenotype):
     def __init__(self, genotype, zero_threshold=4):
-        Phenotype.__init__(self)
-        self.parent = None
-        self.components = self.develop_from_genotype(genotype)
+        Phenotype.__init__(self, genotype)
+        self.components = self.develop_from_genotype()
         self.zero_threshold = zero_threshold
 
-    def develop_from_genotype(self, genotype):
-        self.parent = genotype
-        return genotype.bit_vector
+    def develop_from_genotype(self):
+        return self.parent.dna_vector
 
     def fitness_evaluation(self):
         first_value = self.components[0]
         for i in range(1, len(self.components)):
             if self.components[i] != first_value or (first_value == 0 and (i + 1) == (self.zero_threshold + 1)):
-                return i/len(self.components)
+                return i / len(self.components)
         return 1.0
 
-
-class PhenotypeSurprisingSequence(Phenotype):
+'''
+class PhenotypeSurprisingSequenceWithSubString(Phenotype):
     def __init__(self, genotype, symbol_set_size, local=False, target_surprising_sequence_length=5):
-        Phenotype.__init__(self)
+        Phenotype.__init__(self, genotype)
         self.local = local
         self.target_surprising_sequence_length = target_surprising_sequence_length
         self.symbol_set_size = symbol_set_size
-        self.parent = None
         self.bit_to_symbol_rate = int(ceil(log(self.symbol_set_size, 2)))
         self.longest_surprising_sequence = []
-        self.components = self.develop_from_genotype(genotype)
+        self.components = self.develop_from_genotype()
 
-    def develop_from_genotype(self, genotype):
-        self.parent = genotype
+    def develop_from_genotype(self):
         components = []
-        for i in range(0, (len(genotype.bit_vector)//self.bit_to_symbol_rate)*self.bit_to_symbol_rate , self.bit_to_symbol_rate):
+        for i in range(0, (len(self.parent.bit_vector)//self.bit_to_symbol_rate)*self.bit_to_symbol_rate , self.bit_to_symbol_rate):
             sym_nr = 0
-            for bit in genotype.bit_vector[i:i + self.bit_to_symbol_rate]:
+            for bit in self.parent.bit_vector[i:i + self.bit_to_symbol_rate]:
                 sym_nr = (sym_nr << 1) | bit
             if sym_nr < self.symbol_set_size:
                 components.append(sym_nr)
             #else:
             #    components.append(-1)
         return components
-
 
     def fitness_evaluation(self):
         longest_surprising_sequence = []
@@ -105,3 +99,30 @@ class PhenotypeSurprisingSequence(Phenotype):
                 if self.local:
                     break
         return True
+'''
+
+
+class PhenotypeSurprisingSequence(Phenotype):
+    def __init__(self, genotype, symbol_set_size, local=False):
+        Phenotype.__init__(self, genotype)
+        self.local = local
+        self.components = self.develop_from_genotype()
+
+    def develop_from_genotype(self):
+        return self.parent.dna_vector
+
+    def fitness_evaluation(self):
+        pair_dict = defaultdict(int)
+        if self.local:
+            for i in range(len(self.components) - 1):
+                pair_dict[(self.components[i], self.components[i + 1])] += 1
+        else:
+            for i in range(len(self.components) - 1):
+                for j in range(i, len(self.components)):
+                    pair_dict[(self.components[i], (j - i - 1), self.components[j])] += 1
+        # Counting violations
+        violations = 0
+        for key, value in pair_dict.items():
+            violations += (value - 1)
+        max_violations = (len(self.components * (len(self.components) - 1)) / 2)
+        return 1 - (violations / max_violations)

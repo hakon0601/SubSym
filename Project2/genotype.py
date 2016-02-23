@@ -1,27 +1,37 @@
-from random import randint, random
+from random import randrange, random
 
 
 class Genotype:
-    def __init__(self, length=1, initial_config=False, bit_vector=[]):
+    def __init__(self, length=1, initial_config=False, dna_vector=[], symbol_set_size=2):
+        self.symbol_set_size = symbol_set_size
+        self.legal_values = range(symbol_set_size)
         if initial_config:
-            self.bit_vector = self.generate_random_bit_vector(length)
+            self.dna_vector = self.generate_random_dna_vector(length, symbol_set_size)
         else:
-            self.bit_vector = bit_vector
+            self.dna_vector = dna_vector
 
     @staticmethod
-    def generate_random_bit_vector(length):
-        return [randint(0, 1) for _ in range(length)]
+    def generate_random_dna_vector(length, symbol_set_size):
+        return [randrange(symbol_set_size) for _ in range(length)]
 
     def mutate(self, mutation_rate, mutation_protocol):
         if mutation_protocol == 1:
             #  Invividual
             r = random()
             if r <= mutation_rate:
-                r_i = randint(0, len(self.bit_vector) - 1)
-                self.bit_vector[r_i] = int(not self.bit_vector[r_i])
+                r_i = randrange(len(self.dna_vector))
+                old_val = self.dna_vector[r_i]
+                new_val = randrange(self.symbol_set_size - 1)
+                if new_val >= old_val:
+                    new_val += 1
+                self.dna_vector[r_i] = new_val
         elif mutation_protocol == 2:
             #  Component
-            for i in range(len(self.bit_vector)):
+            for i in range(len(self.dna_vector)):
                 r = random()
                 if r <= mutation_rate:
-                    self.bit_vector[i] = int(not self.bit_vector[i])
+                    old_val = self.dna_vector[i]
+                    new_val = randrange(self.symbol_set_size - 1)
+                    if new_val >= old_val:
+                        new_val += 1
+                    self.dna_vector[i] = new_val
