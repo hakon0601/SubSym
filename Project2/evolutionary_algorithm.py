@@ -9,18 +9,16 @@ from phenotype import PhenotypeOneMax, PhenotypeLolzPrefix, PhenotypeSurprisingS
 
 
 class Population:
-    def __init__(self):
+    def __init__(self,genotype_pool_size, adult_pool_size,
+                 genotype_length, phenotype_length, adult_selection_protocol,
+                 parent_selection_protocol, crossover_rate, points_of_crossover,
+                 mutation_rate, mutation_protocol, zero_threshold, symbol_set_size,
+                 tournament_size, tournament_slip_through_probability, initial_temperature, problem, generations):
         self.genotype_pool = []
         self.phenotype_children_pool = []
         self.phenotype_adult_pool = []
         self.avg_fitness = 0.0
         self.standard_deviation = 0.0
-
-    def set_parameters(self, genotype_pool_size, adult_pool_size,
-                       genotype_length, phenotype_length, adult_selection_protocol,
-                       parent_selection_protocol, crossover_rate, points_of_crossover,
-                       mutation_rate, mutation_protocol, zero_threshold, symbol_set_size,
-                       tournament_size, tournament_slip_through_probability, initial_temperature, problem, generations):
         self.genotype_pool_size = genotype_pool_size
         self.adult_pool_size = adult_pool_size
         self.genotype_length = genotype_length
@@ -39,6 +37,8 @@ class Population:
         self.temperature_step = initial_temperature/generations
         self.problem = problem
         self.generations = generations
+
+        self.initialize_genotypes()
 
     def initialize_genotypes(self):
         self.genotype_pool = [Genotype(length=self.genotype_length, initial_config=True, symbol_set_size=self.symbol_set_size)
