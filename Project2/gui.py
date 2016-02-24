@@ -2,61 +2,60 @@ import Tkinter as tk
 import matplotlib.pyplot as plt
 from math import ceil, log
 
-from population import Population
+from evolutionary_algorithm import EvolutionaryAlgorithm
 
 # Initial parameter values
-GENOTYPE_POOL_SIZE = 30
-ADULT_POOL_SIZE = 30
+GENOTYPE_POOL_SIZE = 250
+ADULT_POOL_SIZE = 250
 GENOTYPE_LENGTH = 40
 PHENOTYPE_LENGTH = 40
 ADULT_SELECTION_PROTOCOL = 1
 PARENT_SELECTION_PROTOCOL = 1
 MUTATION_PROTOCOL = 1
 PROBLEM = 1
-CROSSOVER_RATE = 0.5  # When two parents have a match, they have a X% chance of being recombined.
+CROSSOVER_RATE = 0.95  # When two parents have a match, they have a X% chance of being recombined.
 # When they are not combined they are simply copied (with mutations)
-POINTS_OF_CROSSOVER = 2
-MUTATION_RATE = 0.1
-SYMBOL_SET_SIZE = 5
-TOURNAMENT_SLIP_THROUGH_PROBABILITY = 0.2
+POINTS_OF_CROSSOVER = 1
+MUTATION_RATE = 0.05
+SYMBOL_SET_SIZE = 10
+TOURNAMENT_SLIP_THROUGH_PROBABILITY = 0.25
 TARGET_SURPRISING_SEQUENCE_LENGTH = 5
-TOURNAMENT_SIZE = 4
+TOURNAMENT_SIZE = 14
 INITIAL_TEMPERATURE = 100
-ZERO_THRESHOLD = 4
+ZERO_THRESHOLD = 21
+MAX_GENERATIONS = 1000
 
 
 class Gui(tk.Tk):
-    def __init__(self, delay, generations, *args, **kwargs):
+    def __init__(self, delay, nr_of_runs=1, *args, **kwargs):
         tk.Tk.__init__(self, *args, **kwargs)
         self.delay = delay
-        self.generations = generations
+        self.nr_of_runs = nr_of_runs
+        self.current_run = 0
         self.current_generation = 0
-
         self.fitness_log_average = []
         self.fitness_log_best = []
         self.standard_deviation_log = []
-        self.population = None
+        self.ea = None
         self.build_parameter_menu()
 
     def build_parameter_menu(self):
         self.horizontal_slider_1 = tk.Scale(self, length=1000, from_=2, to=1000, orient=tk.HORIZONTAL,
-                                            label="Genotype Pool Size", resolution=2, command=self.control_pool_size_genotype)
+                                            label="Genotype Pool Size", resolution=2,
+                                            command=self.control_pool_size_genotype)
         self.horizontal_slider_1.set(GENOTYPE_POOL_SIZE)
         self.horizontal_slider_1.pack()
         self.horizontal_slider_2 = tk.Scale(self, length=1000, from_=2, to=1000, orient=tk.HORIZONTAL,
                                             label="Adult Pool Size", resolution=2, command=self.control_pool_size_adult)
         self.horizontal_slider_2.set(ADULT_POOL_SIZE)
         self.horizontal_slider_2.pack()
-        self.horizontal_slider_3 = tk.Scale(self, length=1000, from_=2, to=3000, orient=tk.HORIZONTAL,
+        self.horizontal_slider_3 = tk.Scale(self, length=1000, from_=2, to=1000, orient=tk.HORIZONTAL,
                                             label="Genotype Length")
         self.horizontal_slider_3.set(GENOTYPE_LENGTH)
         self.horizontal_slider_3.pack()
-        self.phenotype_length_label = tk.StringVar()
-        self.phenotype_length_label.set("Phenotype Length: " + str(0))
-        tk.Label(self, textvariable=self.phenotype_length_label).pack(anchor=tk.W)
         crossover_slider_group = tk.Frame(self)
-        self.horizontal_slider_4 = tk.Scale(crossover_slider_group, length=500, from_=0.0, to=1.0, resolution=-1, orient=tk.HORIZONTAL,
-                                            label="Crossover Rate")
+        self.horizontal_slider_4 = tk.Scale(crossover_slider_group, length=500, from_=0.0, to=1.0, resolution=-1,
+                                            orient=tk.HORIZONTAL, label="Crossover Rate")
         self.horizontal_slider_4.set(CROSSOVER_RATE)
         self.horizontal_slider_4.pack(side=tk.LEFT)
         self.horizontal_slider_5 = tk.Scale(self, length=1000, from_=0, to=1, resolution=-1, orient=tk.HORIZONTAL,
@@ -92,7 +91,7 @@ class Gui(tk.Tk):
         self.horizontal_slider_13.pack()
         self.horizontal_slider_14 = tk.Scale(self, length=1000, from_=1, to=10000, orient=tk.HORIZONTAL,
                                              label="Max Number of Generations")
-        self.horizontal_slider_14.set(self.generations)
+        self.horizontal_slider_14.set(MAX_GENERATIONS)
         self.horizontal_slider_14.pack()
 
         self.mutation_protocol = tk.IntVar()
@@ -107,8 +106,10 @@ class Gui(tk.Tk):
         self.adult_selection_protocol.set(ADULT_SELECTION_PROTOCOL)
         radiogroup1 = tk.Frame(self)
         tk.Label(radiogroup1, text="Adult Selection Protocol").pack(anchor=tk.W)
-        tk.Radiobutton(radiogroup1, text="Full", variable=self.adult_selection_protocol, command=self.control_pool_size_adult, value=1).pack(side=tk.LEFT)
-        tk.Radiobutton(radiogroup1, text="Over Production", variable=self.adult_selection_protocol, command=self.control_pool_size_adult, value=2).pack(side=tk.LEFT)
+        tk.Radiobutton(radiogroup1, text="Full", variable=self.adult_selection_protocol,
+                       command=self.control_pool_size_adult, value=1).pack(side=tk.LEFT)
+        tk.Radiobutton(radiogroup1, text="Over Production", variable=self.adult_selection_protocol,
+                       command=self.control_pool_size_adult, value=2).pack(side=tk.LEFT)
         tk.Radiobutton(radiogroup1, text="Mixing", variable=self.adult_selection_protocol, value=3).pack(side=tk.LEFT)
         radiogroup1.pack(anchor=tk.W)
 
@@ -116,10 +117,14 @@ class Gui(tk.Tk):
         self.parent_selection_protocol.set(PARENT_SELECTION_PROTOCOL)
         radiogroup2 = tk.Frame(self)
         tk.Label(radiogroup2, text="Parent Selection Protocol").pack(anchor=tk.W)
-        tk.Radiobutton(radiogroup2, text="Fitness Proportionate", variable=self.parent_selection_protocol, value=1).pack(side=tk.LEFT)
-        tk.Radiobutton(radiogroup2, text="Sigma-scaling", variable=self.parent_selection_protocol, value=2).pack(side=tk.LEFT)
-        tk.Radiobutton(radiogroup2, text="Tournament selection", variable=self.parent_selection_protocol, value=3).pack(side=tk.LEFT)
-        tk.Radiobutton(radiogroup2, text="Boltzmann Selection Protocol", variable=self.parent_selection_protocol, value=4).pack(side=tk.LEFT)
+        tk.Radiobutton(radiogroup2, text="Fitness Proportionate", variable=self.parent_selection_protocol,
+                       value=1).pack(side=tk.LEFT)
+        tk.Radiobutton(radiogroup2, text="Sigma-scaling", variable=self.parent_selection_protocol,
+                       value=2).pack(side=tk.LEFT)
+        tk.Radiobutton(radiogroup2, text="Tournament selection", variable=self.parent_selection_protocol,
+                       value=3).pack(side=tk.LEFT)
+        tk.Radiobutton(radiogroup2, text="Boltzmann Selection", variable=self.parent_selection_protocol,
+                       value=4).pack(side=tk.LEFT)
         radiogroup2.grid(row=4, column=0)
         radiogroup2.pack(anchor=tk.W)
 
@@ -129,12 +134,14 @@ class Gui(tk.Tk):
         tk.Label(radiogroup3, text="Problem type").pack(anchor=tk.W)
         tk.Radiobutton(radiogroup3, text="One Max", variable=self.problem_type, value=1).pack(side=tk.LEFT)
         tk.Radiobutton(radiogroup3, text="LOLZ Prefix", variable=self.problem_type, value=2).pack(side=tk.LEFT)
-        tk.Radiobutton(radiogroup3, text="Surprising Sequence Local", variable=self.problem_type, value=3).pack(side=tk.LEFT)
-        tk.Radiobutton(radiogroup3, text="Surprising Sequence Global", variable=self.problem_type, value=4).pack(side=tk.LEFT)
+        tk.Radiobutton(radiogroup3, text="Surprising Sequence Local", variable=self.problem_type,
+                       value=3).pack(side=tk.LEFT)
+        tk.Radiobutton(radiogroup3, text="Surprising Sequence Global", variable=self.problem_type,
+                       value=4).pack(side=tk.LEFT)
         radiogroup3.grid(row=4, column=0)
         radiogroup3.pack(anchor=tk.W)
 
-        start_button = tk.Button(self, text="Start", width=20, command=self.start_EA)
+        start_button = tk.Button(self, text="Start", width=20, command=self.start_simulation)
         start_button.pack()
 
     def control_pool_size_genotype(self, event):
@@ -151,80 +158,83 @@ class Gui(tk.Tk):
         if self.parent_selection_protocol.get() == 3:
             self.horizontal_slider_11.set(min(self.horizontal_slider_11.get(), self.horizontal_slider_2.get() // 2))
 
-    '''
-    def control_genotype_length(self, event=None):
-        if self.problem_type.get() == 3 or self.problem_type.get() == 4:
-            self.phenotype_length_label.set("Phenotype Length: " +
-                    str(self.horizontal_slider_3.get()//(int(ceil(log(self.horizontal_slider_9.get(), 2))))))
-        else:
-            self.phenotype_length_label.set("Phenotype Length: " + str(self.horizontal_slider_3.get()))
-    '''
-
-
-    def start_EA(self):
-        self.population = Population()
-        self.population.set_parameters(genotype_pool_size=self.horizontal_slider_1.get(),
-                                       adult_pool_size=self.horizontal_slider_2.get(),
-                                       genotype_length=self.horizontal_slider_3.get(),
-                                       phenotype_length=self.horizontal_slider_3.get(),  # Not a single slider
-                                       adult_selection_protocol=self.adult_selection_protocol.get(),
-                                       parent_selection_protocol=self.parent_selection_protocol.get(),
-                                       crossover_rate=self.horizontal_slider_4.get(),
-                                       mutation_rate=self.horizontal_slider_5.get(),
-                                       mutation_protocol=self.mutation_protocol.get(),
-                                       points_of_crossover=self.horizontal_slider_7.get(),
-                                       zero_threshold=self.horizontal_slider_8.get(),
-                                       symbol_set_size=self.horizontal_slider_9.get(),
-                                       tournament_size=self.horizontal_slider_11.get(),
-                                       tournament_slip_through_probability=self.horizontal_slider_12.get(),
-                                       initial_temperature=self.horizontal_slider_13.get(),
-                                       problem=self.problem_type.get(),
-                                       generations=self.horizontal_slider_14.get()
-                                       )
-        self.population.initialize_genotypes()
-        self.generations = self.horizontal_slider_14.get()
-        self.current_generation = 0
+    def start_simulation(self):
+        self.current_run = 0
         self.fitness_log_average = []
         self.fitness_log_best = []
         self.standard_deviation_log = []
-        self.run_EA()
+        self.start_ea()
 
-    def run_EA(self):
-        # Evolve phenotypes from the pool of genotypes
-        self.population.develop_all_genotypes_to_phenotypes()
-        self.population.do_fitness_testing()
-        self.population.refill_adult_pool()
-        self.population.select_parents_and_fill_genome_pool()
-        print "Gen:", "%.2d" % self.current_generation, "\tBest fitness:", \
-            "%.3f" % round(self.population.phenotype_adult_pool[0].fitness_value, 3), "\tAverage fitness:", \
-            "%.3f" % round(self.population.avg_fitness, 3), "\tStandard deviation: ", \
-            "%.3f" % round(self.population.standard_deviation, 3), "\tBest Phenotype:", \
-            self.population.phenotype_adult_pool[0].components
-        self.fitness_log_average.append(self.population.avg_fitness)
-        self.fitness_log_best.append(self.population.phenotype_adult_pool[0].fitness_value)
-        self.standard_deviation_log.append(self.population.standard_deviation)
+    def start_ea(self):
+        self.ea = EvolutionaryAlgorithm(genotype_pool_size=self.horizontal_slider_1.get(),
+                                        adult_pool_size=self.horizontal_slider_2.get(),
+                                        genotype_length=self.horizontal_slider_3.get(),
+                                        phenotype_length=self.horizontal_slider_3.get(),  # Not a single slider
+                                        adult_selection_protocol=self.adult_selection_protocol.get(),
+                                        parent_selection_protocol=self.parent_selection_protocol.get(),
+                                        crossover_rate=self.horizontal_slider_4.get(),
+                                        mutation_rate=self.horizontal_slider_5.get(),
+                                        mutation_protocol=self.mutation_protocol.get(),
+                                        points_of_crossover=self.horizontal_slider_7.get(),
+                                        zero_threshold=self.horizontal_slider_8.get(),
+                                        symbol_set_size=self.horizontal_slider_9.get(),
+                                        tournament_size=self.horizontal_slider_11.get(),
+                                        tournament_slip_through_probability=self.horizontal_slider_12.get(),
+                                        initial_temperature=self.horizontal_slider_13.get(),
+                                        problem=self.problem_type.get(),
+                                        generations=self.horizontal_slider_14.get())
+        self.current_generation = 0
+        self.fitness_log_average.append([])
+        self.fitness_log_best.append([])
+        self.standard_deviation_log.append([])
+        self.run_ea()
+
+    def run_ea(self):
+        self.ea.run_one_life_cycle()
+        self.write_to_log()
         self.current_generation += 1
         if self.current_generation < self.horizontal_slider_14.get() and \
-                        self.population.phenotype_adult_pool[0].fitness_value < 1.0:
-            self.after(self.delay, lambda: self.run_EA())
+                self.ea.phenotype_adult_pool[0].fitness_value < 1.0:
+            self.after(self.delay, lambda: self.run_ea())
         else:
-            self.plot_data()
+            print "End"
+            self.current_run += 1
+            if self.current_run < self.nr_of_runs:
+                self.start_ea()
+            else:
+                print "Average Generations:", sum([len(l) for l in self.fitness_log_average])/len(self.fitness_log_average)
+                self.plot_data()
+
+    def write_to_log(self):
+        print "Gen:", "%.2d" % self.current_generation, "\tBest fitness:", \
+            "%.3f" % round(self.ea.phenotype_adult_pool[0].fitness_value, 3), "\tAverage fitness:", \
+            "%.3f" % round(self.ea.avg_fitness, 3), "\tStandard deviation: ", \
+            "%.3f" % round(self.ea.standard_deviation, 3), "\tBest Phenotype:", \
+            self.ea.phenotype_adult_pool[0].components
+        if self.problem_type.get() > 2:
+            print "Violations: ", self.ea.phenotype_adult_pool[0].violations
+        self.fitness_log_average[self.current_run].append(self.ea.avg_fitness)
+        self.fitness_log_best[self.current_run].append(self.ea.phenotype_adult_pool[0].fitness_value)
+        self.standard_deviation_log[self.current_run].append(self.ea.standard_deviation)
 
     def plot_data(self):
         plt.figure(1)
         plt.subplot(311)
-        plt.plot(self.fitness_log_average)
-        plt.legend(['x = Generations\ny = Average fitness in adult pool'], loc='lower right')
+        plt.plot(self.fitness_log_average[-1], label="Average fitness")
+        plt.plot(self.fitness_log_best[-1], label="Best fitness")
+        #plt.legend(['y = Average fitness in adult pool', 'y = Best fitness in adult pool'], loc='lower right')
+        plt.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3, ncol=2, mode="expand", borderaxespad=0.)
+
 
         plt.subplot(312)
-        plt.plot(self.fitness_log_best)
-        plt.legend(['x = Generations\ny = Best fitness in adult pool'], loc='lower right')
+        plt.plot(self.fitness_log_best[-1])
+        plt.legend(['y = Best fitness in adult pool'], loc='lower right')
 
         plt.subplot(313)
-        plt.plot(self.standard_deviation_log)
-        plt.legend(['x = Generations\ny = Standard deviation'], loc='upper right')
+        plt.plot(self.standard_deviation_log[-1])
+        plt.legend(['y = Standard deviation'], loc='upper right')
         plt.show()
 
 if __name__ == "__main__":
-    app = Gui(delay=1, generations=1000)
+    app = Gui(delay=1, nr_of_runs=1)
     app.mainloop()

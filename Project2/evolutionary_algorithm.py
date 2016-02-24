@@ -1,15 +1,15 @@
 from __future__ import division
-from random import random, choice
+from random import random, choice, randrange
 from copy import copy
 from numpy import array, std
 from math import exp
 
 from genotype import Genotype
-from phenotype import PhenotypeOneMax, PhenotypeLolzPrefix, PhenotypeSurprisingSequence
+from phenotype import PhenotypeOneMax, PhenotypeLolzPrefix, PhenotypeSurprisingSequence, PhenotypeOneMaxRandomTarget
 
 
-class Population:
-    def __init__(self,genotype_pool_size, adult_pool_size,
+class EvolutionaryAlgorithm:
+    def __init__(self, genotype_pool_size, adult_pool_size,
                  genotype_length, phenotype_length, adult_selection_protocol,
                  parent_selection_protocol, crossover_rate, points_of_crossover,
                  mutation_rate, mutation_protocol, zero_threshold, symbol_set_size,
@@ -37,12 +37,21 @@ class Population:
         self.temperature_step = initial_temperature/generations
         self.problem = problem
         self.generations = generations
+        self.target = [randrange(2) for _ in range(self.phenotype_length)]
 
         self.initialize_genotypes()
 
     def initialize_genotypes(self):
-        self.genotype_pool = [Genotype(length=self.genotype_length, initial_config=True, symbol_set_size=self.symbol_set_size)
-                              for _ in range(self.genotype_pool_size)]
+        self.genotype_pool = [
+            Genotype(length=self.genotype_length, initial_config=True, symbol_set_size=self.symbol_set_size)for _ in range(self.genotype_pool_size)]
+
+    def run_one_life_cycle(self):
+        # Evolve phenotypes from the pool of genotypes
+        self.develop_all_genotypes_to_phenotypes()
+        # Calculate fitness of adults
+        self.do_fitness_testing()
+        self.refill_adult_pool()
+        self.select_parents_and_fill_genome_pool()
 
     def develop_all_genotypes_to_phenotypes(self):
         self.phenotype_children_pool = []
@@ -56,9 +65,11 @@ class Population:
         elif self.problem == 2:
             return PhenotypeLolzPrefix(genotype, zero_threshold=self.zero_threshold)
         elif self.problem == 3:
-            return PhenotypeSurprisingSequence(genotype, symbol_set_size=self.symbol_set_size, local=True)
+            return PhenotypeSurprisingSequence(genotype, local=True)
         elif self.problem == 4:
-            return PhenotypeSurprisingSequence(genotype, symbol_set_size=self.symbol_set_size)
+            return PhenotypeSurprisingSequence(genotype)
+        elif self.problem == 5:
+            return PhenotypeOneMaxRandomTarget(genotype, self.target)
 
     def do_fitness_testing(self):
         for phenotype in self.phenotype_children_pool:
@@ -66,11 +77,12 @@ class Population:
 
     def refill_adult_pool(self):
         # Full And over-production. Dependant on difference between adult pool- and genotype pool size
-        if self.adult_selection_protocol == 1:
+        if self.adult_selection_protocol == 1 or self.adult_selection_protocol == 2:
             self.phenotype_children_pool.sort(reverse=True)
             self.phenotype_adult_pool = self.phenotype_children_pool[0:self.adult_pool_size]
         elif self.adult_selection_protocol == 3:  # mixing:
-            self.phenotype_adult_pool = sorted((self.phenotype_children_pool + self.phenotype_adult_pool), reverse=True)[0:self.adult_pool_size]
+            self.phenotype_adult_pool = sorted((self.phenotype_children_pool + self.phenotype_adult_pool),
+                                               reverse=True)[0:self.adult_pool_size]
 
     def scale_fitness_of_adult_pool(self):
         # TODO This array can be generated when calculating fitness
@@ -90,7 +102,9 @@ class Population:
         self.genotype_pool = []
         for _ in range(self.genotype_pool_size//2):
             # Fitness Proportionate or Sigma-scaling or boltzmann using "roulette selection"
-            if self.parent_selection_protocol == 1 or self.parent_selection_protocol == 2 or self.parent_selection_protocol == 4:
+            if self.parent_selection_protocol == 1 or \
+                            self.parent_selection_protocol == 2 or \
+                            self.parent_selection_protocol == 4:
                 parent1, parent2 = self.chose_parents_roulette()
             elif self.parent_selection_protocol == 3:  # Tournament Selection
                 parent1, parent2 = self.chose_parents_tournament_selection()
@@ -170,32 +184,12 @@ class Population:
     def mate_parents(self, parent1, parent2):
         r = random()
         if r <= self.crossover_rate:
-            child1_dna_vector, child2_dna_vector = self.create_crossover_dna_vector(parent1.parent.dna_vector,
-                                                                                    parent2.parent.dna_vector)
-            child1 = Genotype(self.genotype_length, dna_vector=child1_dna_vector)
-            child2 = Genotype(self.genotype_length, dna_vector=child2_dna_vector)
+            child1_dna_vector, child2_dna_vector = parent1.parent.create_crossover_dna_vector(parent2.parent, self.points_of_crossover)
+            child1 = Genotype(self.genotype_length, dna_vector=copy(child1_dna_vector), symbol_set_size=self.symbol_set_size)
+            child2 = Genotype(self.genotype_length, dna_vector=copy(child2_dna_vector), symbol_set_size=self.symbol_set_size)
         else:
-            child1 = Genotype(self.genotype_length, dna_vector=copy(parent1.parent.dna_vector))
-            child2 = Genotype(self.genotype_length, dna_vector=copy(parent2.parent.dna_vector))
+            child1 = Genotype(self.genotype_length, dna_vector=copy(parent1.parent.dna_vector), symbol_set_size=self.symbol_set_size)
+            child2 = Genotype(self.genotype_length, dna_vector=copy(parent2.parent.dna_vector), symbol_set_size=self.symbol_set_size)
         child1.mutate(mutation_rate=self.mutation_rate, mutation_protocol=self.mutation_protocol)
         child2.mutate(mutation_rate=self.mutation_rate, mutation_protocol=self.mutation_protocol)
         return child1, child2
-
-    def create_crossover_dna_vector(self, parent1_dna_vector, parent2_dna_vector):
-        component_bulk_size = self.genotype_length//(self.points_of_crossover + 1)
-        child1_dna_vector = []
-        child2_dna_vector = []
-        for i in range(self.points_of_crossover):
-            if i % 2 == 0:
-                child1_dna_vector += copy(parent1_dna_vector[i * component_bulk_size:(i + 1) * component_bulk_size])
-                child2_dna_vector += copy(parent2_dna_vector[i * component_bulk_size:(i + 1) * component_bulk_size])
-            else:
-                child1_dna_vector += copy(parent2_dna_vector[i * component_bulk_size:(i + 1) * component_bulk_size])
-                child2_dna_vector += copy(parent1_dna_vector[i * component_bulk_size:(i + 1) * component_bulk_size])
-        if self.points_of_crossover % 2 == 0:
-            child1_dna_vector += copy(parent1_dna_vector[(i + 1) * component_bulk_size:])
-            child2_dna_vector += copy(parent2_dna_vector[(i + 1) * component_bulk_size:])
-        else:
-            child1_dna_vector += copy(parent2_dna_vector[(i + 1) * component_bulk_size:])
-            child2_dna_vector += copy(parent1_dna_vector[(i + 1) * component_bulk_size:])
-        return child1_dna_vector, child2_dna_vector

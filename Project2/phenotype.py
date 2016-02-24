@@ -1,5 +1,5 @@
 from __future__ import division
-from math import log, ceil
+from random import randrange
 from collections import defaultdict
 
 
@@ -34,6 +34,23 @@ class PhenotypeOneMax(Phenotype):
 
     def fitness_evaluation(self):
         return sum(self.components) / len(self.components)
+
+
+class PhenotypeOneMaxRandomTarget(Phenotype):
+    def __init__(self, genotype, target):
+        Phenotype.__init__(self, genotype)
+        self.components = self.develop_from_genotype()
+        self.target = target
+
+    def develop_from_genotype(self):
+        return self.parent.dna_vector
+
+    def fitness_evaluation(self):
+        count = 0
+        for i in range(len(self.components)):
+            if self.components[i] == self.target[i]:
+                count += 1
+        return count / len(self.target)
 
 
 class PhenotypeLolzPrefix(Phenotype):
@@ -103,7 +120,7 @@ class PhenotypeSurprisingSequenceWithSubString(Phenotype):
 
 
 class PhenotypeSurprisingSequence(Phenotype):
-    def __init__(self, genotype, symbol_set_size, local=False):
+    def __init__(self, genotype, local=False):
         Phenotype.__init__(self, genotype)
         self.local = local
         self.components = self.develop_from_genotype()
@@ -114,9 +131,11 @@ class PhenotypeSurprisingSequence(Phenotype):
     def fitness_evaluation(self):
         pair_dict = defaultdict(int)
         if self.local:
+            max_violations = len(self.components) - 1
             for i in range(len(self.components) - 1):
                 pair_dict[(self.components[i], self.components[i + 1])] += 1
         else:
+            max_violations = (len(self.components * (len(self.components) - 1)) / 2)
             for i in range(len(self.components) - 1):
                 for j in range(i, len(self.components)):
                     pair_dict[(self.components[i], (j - i - 1), self.components[j])] += 1
@@ -124,5 +143,5 @@ class PhenotypeSurprisingSequence(Phenotype):
         violations = 0
         for key, value in pair_dict.items():
             violations += (value - 1)
-        max_violations = (len(self.components * (len(self.components) - 1)) / 2)
+        self.violations = violations
         return 1 - (violations / max_violations)
