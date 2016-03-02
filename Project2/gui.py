@@ -5,22 +5,22 @@ from math import ceil, log
 from evolutionary_algorithm import EvolutionaryAlgorithm
 
 # Initial parameter values
-GENOTYPE_POOL_SIZE = 250
-ADULT_POOL_SIZE = 250
-GENOTYPE_LENGTH = 40
-PHENOTYPE_LENGTH = 40
-ADULT_SELECTION_PROTOCOL = 1
-PARENT_SELECTION_PROTOCOL = 1
+GENOTYPE_POOL_SIZE = 400
+ADULT_POOL_SIZE = 300
+GENOTYPE_LENGTH = 104
+PHENOTYPE_LENGTH = 104
+ADULT_SELECTION_PROTOCOL = 2
+PARENT_SELECTION_PROTOCOL = 3
 MUTATION_PROTOCOL = 1
 PROBLEM = 1
-CROSSOVER_RATE = 0.95  # When two parents have a match, they have a X% chance of being recombined.
+CROSSOVER_RATE = 0.85  # When two parents have a match, they have a X% chance of being recombined.
 # When they are not combined they are simply copied (with mutations)
 POINTS_OF_CROSSOVER = 1
-MUTATION_RATE = 0.05
+MUTATION_RATE = 0.55
 SYMBOL_SET_SIZE = 10
-TOURNAMENT_SLIP_THROUGH_PROBABILITY = 0.25
+TOURNAMENT_SLIP_THROUGH_PROBABILITY = 0.65
 TARGET_SURPRISING_SEQUENCE_LENGTH = 5
-TOURNAMENT_SIZE = 14
+TOURNAMENT_SIZE = 18
 INITIAL_TEMPERATURE = 100
 ZERO_THRESHOLD = 21
 MAX_GENERATIONS = 1000
@@ -71,12 +71,12 @@ class Gui(tk.Tk):
                                             label="Zero-threshold")
         self.horizontal_slider_8.set(ZERO_THRESHOLD)
         self.horizontal_slider_8.pack()
-        self.horizontal_slider_9 = tk.Scale(self, length=1000, from_=1, to=100, orient=tk.HORIZONTAL,
+        self.horizontal_slider_9 = tk.Scale(self, length=1000, from_=1, to=50, orient=tk.HORIZONTAL,
                                             label="Symbol Set Size")
         self.horizontal_slider_9.set(SYMBOL_SET_SIZE)
         self.horizontal_slider_9.pack(anchor=tk.W)
         tournament_slider_group = tk.Frame(self)
-        self.horizontal_slider_11 = tk.Scale(tournament_slider_group, length=500, from_=1, to=500, orient=tk.HORIZONTAL,
+        self.horizontal_slider_11 = tk.Scale(tournament_slider_group, length=500, from_=3, to=500, orient=tk.HORIZONTAL,
                                             label="Tournament Size")
         self.horizontal_slider_11.set(TOURNAMENT_SIZE)
         self.horizontal_slider_11.pack(side=tk.LEFT)
@@ -125,7 +125,6 @@ class Gui(tk.Tk):
                        value=3).pack(side=tk.LEFT)
         tk.Radiobutton(radiogroup2, text="Boltzmann Selection", variable=self.parent_selection_protocol,
                        value=4).pack(side=tk.LEFT)
-        radiogroup2.grid(row=4, column=0)
         radiogroup2.pack(anchor=tk.W)
 
         self.problem_type = tk.IntVar()
@@ -138,7 +137,6 @@ class Gui(tk.Tk):
                        value=3).pack(side=tk.LEFT)
         tk.Radiobutton(radiogroup3, text="Surprising Sequence Global", variable=self.problem_type,
                        value=4).pack(side=tk.LEFT)
-        radiogroup3.grid(row=4, column=0)
         radiogroup3.pack(anchor=tk.W)
 
         start_button = tk.Button(self, text="Start", width=20, command=self.start_simulation)
@@ -209,7 +207,7 @@ class Gui(tk.Tk):
         print "Gen:", "%.2d" % self.current_generation, "\tBest fitness:", \
             "%.3f" % round(self.ea.phenotype_adult_pool[0].fitness_value, 3), "\tAverage fitness:", \
             "%.3f" % round(self.ea.avg_fitness, 3), "\tStandard deviation: ", \
-            "%.3f" % round(self.ea.standard_deviation, 3), "\tBest Phenotype:", \
+            "%.5f" % round(self.ea.standard_deviation, 3), "\tBest Phenotype:", \
             self.ea.phenotype_adult_pool[0].components
         if self.problem_type.get() > 2:
             print "Violations: ", self.ea.phenotype_adult_pool[0].violations

@@ -1,5 +1,5 @@
 from __future__ import division
-from random import randrange
+from random import randrange, random
 from collections import defaultdict
 
 
@@ -21,7 +21,13 @@ class Phenotype:
     def __lt__(self, other):
         if self.fitness_value < other.fitness_value:
             return True
-        return False
+        elif self.fitness_value > other.fitness_value:
+            return False
+        else:
+            r = random()
+            if r >= 0.5:
+                return True
+            return False
 
 
 class PhenotypeOneMax(Phenotype):
@@ -137,7 +143,7 @@ class PhenotypeSurprisingSequence(Phenotype):
         else:
             max_violations = (len(self.components * (len(self.components) - 1)) / 2)
             for i in range(len(self.components) - 1):
-                for j in range(i, len(self.components)):
+                for j in range(i + 1, len(self.components)):
                     pair_dict[(self.components[i], (j - i - 1), self.components[j])] += 1
         # Counting violations
         violations = 0

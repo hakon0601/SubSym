@@ -143,7 +143,6 @@ class Gui(tk.Tk):
             self.canvas.coords(self.predator_direction_drawings[j], pred.x, pred.y, pred.x + (pred.velocity_x/float(MAX_PREDATOR_VELOCITY))* PREDATOR_NEIGHBOUR_DISTANCE, pred.y + (pred.velocity_y/float(MAX_PREDATOR_VELOCITY))* PREDATOR_NEIGHBOUR_DISTANCE)
             if self.draw_neighbourhood:
                 self.canvas.coords(self.predator_neighbourhood_drawings[j], pred.x - PREDATOR_NEIGHBOUR_DISTANCE, pred.y - PREDATOR_NEIGHBOUR_DISTANCE, pred.x + PREDATOR_NEIGHBOUR_DISTANCE, pred.y + PREDATOR_NEIGHBOUR_DISTANCE)
-        
 
     def run_simulation(self):
         if not self.pause:

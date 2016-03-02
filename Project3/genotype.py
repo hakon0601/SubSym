@@ -61,17 +61,17 @@ class Genotype:
             component_bulk_size = len(self.dna_vector) // (points_of_crossover + 1)
             child1_dna_vector = []
             child2_dna_vector = []
-            for i in range(points_of_crossover):
-                if i % 2 == 0:
-                    child1_dna_vector += copy(self.dna_vector[i * component_bulk_size:(i + 1) * component_bulk_size])
-                    child2_dna_vector += copy(other.dna_vector[i * component_bulk_size:(i + 1) * component_bulk_size])
+            for j in range(points_of_crossover):
+                if j % 2 == 0:
+                    child1_dna_vector += copy(self.dna_vector[j * component_bulk_size:(j + 1) * component_bulk_size])
+                    child2_dna_vector += copy(other.dna_vector[j * component_bulk_size:(j + 1) * component_bulk_size])
                 else:
-                    child1_dna_vector += copy(other.dna_vector[i * component_bulk_size:(i + 1) * component_bulk_size])
-                    child2_dna_vector += copy(self.dna_vector[i * component_bulk_size:(i + 1) * component_bulk_size])
+                    child1_dna_vector += copy(other.dna_vector[j * component_bulk_size:(j + 1) * component_bulk_size])
+                    child2_dna_vector += copy(self.dna_vector[j * component_bulk_size:(j + 1) * component_bulk_size])
             if points_of_crossover % 2 == 0:
-                child1_dna_vector += copy(self.dna_vector[(i + 1) * component_bulk_size:])
-                child2_dna_vector += copy(other.dna_vector[(i + 1) * component_bulk_size:])
+                child1_dna_vector += copy(self.dna_vector[(j + 1) * component_bulk_size:])
+                child2_dna_vector += copy(other.dna_vector[(j + 1) * component_bulk_size:])
             else:
-                child1_dna_vector += copy(other.dna_vector[(i + 1) * component_bulk_size:])
-                child2_dna_vector += copy(self.dna_vector[(i + 1) * component_bulk_size:])
+                child1_dna_vector += copy(other.dna_vector[(j + 1) * component_bulk_size:])
+                child2_dna_vector += copy(self.dna_vector[(j + 1) * component_bulk_size:])
         return child1_dna_vector, child2_dna_vector
