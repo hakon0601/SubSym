@@ -6,3 +6,5 @@ class ActivationFunction(Enum):
     hyperbolic_tangent = 1
     rectify = 2
     softmax = 3
+
+

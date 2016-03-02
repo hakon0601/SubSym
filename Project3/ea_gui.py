@@ -1,6 +1,4 @@
 import Tkinter as tk
-from ann import Ann
-from agent import FlatlandAgent
 from direction import Direction
 from flatland import Flatland
 from evolutionary_algorithm import EvolutionaryAlgorithm
@@ -176,17 +174,7 @@ class EAGui(tk.Tk):
         self.start_ea()
 
     def start_ea(self):
-        self.flatlands = [self.initialize_board() for _ in range(self.horizontal_slider_11.get())]
-        hidden_layer_list = self.hidden_layers.get()
-        if hidden_layer_list != '':
-            self.layers_list = [INPUT_NODES] + \
-                               map(int, self.hidden_layers.get().replace(" ", "").split(",")) + \
-                               [OUTPUT_NODES]
-        else:
-            self.layers_list = [INPUT_NODES, OUTPUT_NODES]
-        self.activations_list = map(int, str(self.activation_functions.get()).replace(" ", "").split(","))
-        self.genotype_size = sum([self.layers_list[i] * self.layers_list[i + 1]
-                                  for i in range(len(self.layers_list) - 1)])
+        self.parse_ann_input()
         self.ea = EvolutionaryAlgorithm(genotype_pool_size=self.horizontal_slider_1.get(),
                                         adult_pool_size=self.horizontal_slider_2.get(),
                                         elitism=self.horizontal_slider_3.get(),
@@ -202,11 +190,11 @@ class EAGui(tk.Tk):
                                         tournament_size=self.horizontal_slider_8.get(),
                                         tournament_slip_through_probability=self.horizontal_slider_9.get(),
                                         initial_temperature=self.horizontal_slider_10.get(),
-                                        environments=self.flatlands,
-                                        scenario_protocol=self.scenario_protocol.get(),
                                         hidden_layers=self.layers_list,
                                         activation_functions=self.activations_list,
                                         generations=self.horizontal_slider_12.get())
+
+        self.flatlands = [self.initialize_board() for _ in range(self.horizontal_slider_11.get())]
         self.current_generation = 0
         self.fitness_log_average.append([])
         self.fitness_log_best.append([])
@@ -214,36 +202,36 @@ class EAGui(tk.Tk):
         self.run_ea()
 
     def run_ea(self):
-        self.ea.run_one_life_cycle()
+        self.ea.run_one_life_cycle(self.flatlands)
+        if self.scenario_protocol.get() != 1:
+            self.flatlands = [self.initialize_board() for _ in range(len(self.flatlands))]
         self.write_to_log()
         self.current_generation += 1
         if self.current_generation < self.horizontal_slider_12.get() and \
                 self.ea.phenotype_adult_pool[0].fitness_value < 1.0:
             self.after(self.delay, lambda: self.run_ea())
-        else:
-            print "End"
+        elif self.current_run < self.nr_of_runs - 1:
             self.current_run += 1
-            if self.current_run < self.nr_of_runs:
-                print "Current run", self.current_run
-                self.start_ea()
-            else:
-                print "Avg best fitness:", sum([self.fitness_log_best[i][-1]
+            print "Current run", self.current_run + 1
+            self.start_ea()
+        else:
+            self.end_ea_run_visualisation()
+
+    def end_ea_run_visualisation(self):
+        print "Avg best fitness:", sum([self.fitness_log_best[i][-1]
                                                 for i in range(len(self.fitness_log_best))])/len(self.fitness_log_best)
-                print "Best fitness:", max([self.fitness_log_best[i][-1] for i in range(len(self.fitness_log_best))])
-                weights = self.ea.phenotype_adult_pool[0].prepare_weights_for_ann()
-                if self.scenario_protocol.get() == 2 or self.scenario_protocol.get() == 3:
-                    self.flatlands = [self.initialize_board() for _ in range(len(self.flatlands))]
-                FlatlandGui(delay=300,
-                            environments=self.flatlands,
-                            agent=FlatlandAgent(0, 0, Direction.north),
-                            ann=Ann(weights=weights,
-                                    hidden_layers=self.layers_list,
-                                    activation_functions=self.activations_list),
-                            fitness_log_average=self.fitness_log_average,
-                            fitness_log_best=self.fitness_log_best,
-                            standard_deviation_log=self.standard_deviation_log)
-                print "Average Generations:", \
-                    sum([len(l) for l in self.fitness_log_average]) / len(self.fitness_log_average)
+        print "Best fitness:", max([self.fitness_log_best[i][-1] for i in range(len(self.fitness_log_best))])
+        weights = self.ea.phenotype_adult_pool[0].prepare_weights_for_ann()
+        FlatlandGui(delay=300,
+                    environments=self.flatlands,
+                    ann_weights=weights,
+                    layers_list=self.layers_list,
+                    activation_functions=self.activations_list,
+                    fitness_log_average=self.fitness_log_average,
+                    fitness_log_best=self.fitness_log_best,
+                    standard_deviation_log=self.standard_deviation_log)
+        print "Average Generations:", \
+            sum([len(l) for l in self.fitness_log_average]) / len(self.fitness_log_average)
 
     @staticmethod
     def initialize_board():
@@ -251,6 +239,17 @@ class EAGui(tk.Tk):
                             food_probability=FOOD_PROBABILITY,
                             poison_probability=POISON_PROBABILITY)
         return flatland
+
+    def parse_ann_input(self):
+        if self.hidden_layers.get() != '':
+            self.layers_list = [INPUT_NODES] + \
+                               map(int, self.hidden_layers.get().replace(" ", "").split(",")) + \
+                               [OUTPUT_NODES]
+        else:
+            self.layers_list = [INPUT_NODES, OUTPUT_NODES]
+        self.activations_list = map(int, str(self.activation_functions.get()).replace(" ", "").split(","))
+        self.genotype_size = sum([self.layers_list[i] * self.layers_list[i + 1]
+                                  for i in range(len(self.layers_list) - 1)])
 
     def write_to_log(self):
         print "Gen:", "%.2d" % self.current_generation, "\tBest fitness:", \
@@ -263,5 +262,5 @@ class EAGui(tk.Tk):
         self.standard_deviation_log[self.current_run].append(self.ea.standard_deviation)
 
 if __name__ == "__main__":
-    app = EAGui(delay=1, nr_of_runs=1)
+    app = EAGui(delay=1, nr_of_runs=10)
     app.mainloop()

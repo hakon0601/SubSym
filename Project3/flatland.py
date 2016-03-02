@@ -1,5 +1,6 @@
 from random import random
 from cell_item import CellItem
+from agent import FlatlandAgent
 
 
 class Flatland:
@@ -11,6 +12,7 @@ class Flatland:
         self.food_count = 0
         self.poison_count = 0
         self.board = self.construct_board()
+        self.agent = FlatlandAgent()
 
     def construct_board(self):
         board = []

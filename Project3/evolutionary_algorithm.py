@@ -1,11 +1,10 @@
 from __future__ import division
 from random import random, choice
-from copy import copy
+from copy import copy, deepcopy
 from numpy import array, std
 from math import exp
 from genotype import Genotype
 from phenotype import PhenotypeAnn
-from flatland import Flatland
 
 
 class EvolutionaryAlgorithm:
@@ -14,7 +13,7 @@ class EvolutionaryAlgorithm:
                  parent_selection_protocol, crossover_rate, points_of_crossover,
                  mutation_rate, mutation_protocol, symbol_set_size,
                  tournament_size, tournament_slip_through_probability, initial_temperature,
-                 environments, hidden_layers, scenario_protocol, activation_functions, generations):
+                 hidden_layers, activation_functions, generations):
         self.genotype_pool = []
         self.phenotype_children_pool = []
         self.phenotype_adult_pool = []
@@ -37,10 +36,8 @@ class EvolutionaryAlgorithm:
         self.temperature = initial_temperature
         self.temperature_step = initial_temperature / generations
         self.generations = generations
-        self.environments = environments
         self.activation_functions = activation_functions
         self.hidden_layers = hidden_layers
-        self.scenario_protocol = scenario_protocol
 
         self.initialize_genotypes()
 
@@ -50,11 +47,11 @@ class EvolutionaryAlgorithm:
                                        symbol_set_size=self.symbol_set_size)
                               for _ in range(self.genotype_pool_size)]
 
-    def run_one_life_cycle(self):
+    def run_one_life_cycle(self, environments):
         # Evolve phenotypes from the pool of genotypes
         self.develop_all_genotypes_to_phenotypes()
         # Calculate fitness of adults
-        self.do_fitness_testing()
+        self.do_fitness_testing(environments)
         self.refill_adult_pool()
         self.select_parents_and_fill_genome_pool()
 
@@ -67,18 +64,12 @@ class EvolutionaryAlgorithm:
     def init_phenotype_type(self, genotype):
         return PhenotypeAnn(genotype,
                             hidden_layers=self.hidden_layers,
-                            activation_functions=self.activation_functions,
-                            scenario_protocol=self.scenario_protocol)
+                            activation_functions=self.activation_functions)
 
-    def do_fitness_testing(self):
-        if self.scenario_protocol == 2:
-            self.environments = [Flatland(width=self.environments[0].width, height=self.environments[0].height,
-                                          food_probability=self.environments[0].food_probability,
-                                          poison_probability=self.environments[0].poison_probability)
-                                 for _ in range(len(self.environments))]
+    def do_fitness_testing(self, environments):
         for i in range(len(self.phenotype_children_pool)):
             self.phenotype_children_pool[i].fitness_value = \
-                self.phenotype_children_pool[i].fitness_evaluation(self.environments)
+                self.phenotype_children_pool[i].fitness_evaluation(environments)
 
     def refill_adult_pool(self):
         # Full And over-production. Dependant on difference between adult pool- and genotype pool size
@@ -163,17 +154,12 @@ class EvolutionaryAlgorithm:
 
     def chose_parents_tournament_selection(self):
         tournament_1 = []
-        # tournament_2 = []
+        selection_pool = deepcopy(self.phenotype_adult_pool)
         while len(tournament_1) < self.tournament_size:
-            candidate = choice(self.phenotype_adult_pool)
-            if candidate not in tournament_1:
-                tournament_1.append(candidate)
-        # while len(tournament_2) < self.tournament_size:
-        #     candidate = choice(self.phenotype_adult_pool)
-        #     if candidate not in tournament_1 and candidate not in tournament_2:
-        #         tournament_2.append(candidate)
+            candidate = choice(selection_pool)
+            selection_pool.remove(candidate)
+            tournament_1.append(candidate)
         tournament_1.sort(reverse=True)
-        # tournament_2.sort(reverse=True)
         r1 = random()
         if r1 > self.tournament_slip_through_probability:
             parent1 = tournament_1[0]

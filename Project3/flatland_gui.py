@@ -5,16 +5,16 @@ from cell_item import CellItem
 from copy import deepcopy
 import matplotlib.pyplot as plt
 from constants import *
+from ann import Ann
 
 
 class FlatlandGui(tk.Tk):
-    def __init__(self, delay, environments, agent, ann,
+    def __init__(self, delay, environments, ann_weights, layers_list, activation_functions,
                  fitness_log_average, fitness_log_best, standard_deviation_log):
         tk.Tk.__init__(self)
         self.delay = delay
         self.flatlands = environments
-        self.agents = [deepcopy(agent) for _ in range(len(environments))]
-        self.ann = ann
+        self.ann = Ann(weights=ann_weights, hidden_layers=layers_list, activation_functions=activation_functions)
         self.current_timestep = 0
         self.max_timestep = 60
         self.standard_deviation_log = standard_deviation_log
@@ -33,12 +33,12 @@ class FlatlandGui(tk.Tk):
         self.canvas.pack(side="top", fill="both", expand="true")
         self.pause = True
         self.bind('<space>', self.toggle_pause)
-        self.bind('<,>', self.decrease_simulation_speed)
-        self.bind('<.>', self.increase_simulation_speed)
+        self.bind('<n>', self.decrease_simulation_speed)
+        self.bind('<m>', self.increase_simulation_speed)
         self.draw_text()
         self.draw_board()
         self.update_text()
-        self.draw_agents(self.agents)
+        self.draw_agents()
         self.start_simulation()
 
     def toggle_pause(self, event=None):
@@ -90,16 +90,16 @@ class FlatlandGui(tk.Tk):
     def update_text(self):
         for i in range(len(self.flatlands)):
             self.canvas.itemconfig(self.food_texts[i], text="Food eaten:" +
-                                                            str(self.agents[i].food_eaten) + "/" +
+                                                            str(self.flatlands[i].agent.food_eaten) + "/" +
                                                             str(self.flatlands[i].food_count))
             self.canvas.itemconfig(self.poison_texts[i], text="Poison eaten:" +
-                                                              str(self.agents[i].poison_eaten) + "/" +
+                                                              str(self.flatlands[i].agent.poison_eaten) + "/" +
                                                               str(self.flatlands[i].poison_count))
         self.canvas.itemconfig(self.step_text, text="Step: " + str(self.current_timestep + 1))
 
-    def draw_agents(self, agents):
+    def draw_agents(self):
         for i in range(len(self.flatlands)):
-            agent = agents[i]
+            agent = self.flatlands[i].agent
             for j in range(len(self.agent_component[i])):
                 self.canvas.delete(self.agent_component[i][j])
             offset = (i * (FLATLAND_WIDTH * self.cell_size + GRID_OFFSET))
@@ -203,7 +203,7 @@ class FlatlandGui(tk.Tk):
         if not self.pause:
             if self.current_timestep < self.max_timestep:
                 for i in range(len(self.flatlands)):
-                    agent_sensor_output = self.agents[i].sense_front_left_right(self.flatlands[i])
+                    agent_sensor_output = self.flatlands[i].agent.sense_front_left_right(self.flatlands[i])
                     ann_inputs = [1 if agent_sensor_output[0] == CellItem.food else 0,
                                   1 if agent_sensor_output[1] == CellItem.food else 0,
                                   1 if agent_sensor_output[2] == CellItem.food else 0,
@@ -213,14 +213,14 @@ class FlatlandGui(tk.Tk):
                     prediction = self.ann.predict(inputs=ann_inputs)
                     best_index = prediction.argmax()
                     if best_index == 1:
-                        self.agents[i].move_left()
+                        self.flatlands[i].agent.move_left()
                     elif best_index == 2:
-                        self.agents[i].move_right()
-                    self.agents[i].move_forward(self.flatlands[i])
+                        self.flatlands[i].agent.move_right()
+                    self.flatlands[i].agent.move_forward(self.flatlands[i])
                     # Remove cell component
-                    if (i, self.agents[i].x, self.agents[i].y) in self.cell_components:
-                        self.canvas.delete(self.cell_components[i, self.agents[i].x, self.agents[i].y])
-                self.draw_agents(self.agents)
+                    if (i, self.flatlands[i].agent.x, self.flatlands[i].agent.y) in self.cell_components:
+                        self.canvas.delete(self.cell_components[i, self.flatlands[i].agent.x, self.flatlands[i].agent.y])
+                self.draw_agents()
                 self.update_text()
                 self.current_timestep += 1
             else:

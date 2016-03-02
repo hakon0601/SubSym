@@ -3,7 +3,7 @@ from cell_item import CellItem
 
 
 class FlatlandAgent:
-    def __init__(self, x, y, direction):
+    def __init__(self, x=0, y=0, direction=Direction.north):
         self.x = x
         self.y = y
         self.direction = direction
