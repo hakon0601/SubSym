@@ -212,14 +212,14 @@ class EAGui(tk.Tk):
             self.after(self.delay, lambda: self.run_ea())
         elif self.current_run < self.nr_of_runs - 1:
             self.current_run += 1
-            print "Current run", self.current_run + 1
+            print "Current run", self.current_run
             self.start_ea()
         else:
             self.end_ea_run_visualisation()
 
     def end_ea_run_visualisation(self):
-        print "Avg best fitness:", sum([self.fitness_log_best[i][-1]
-                                                for i in range(len(self.fitness_log_best))])/len(self.fitness_log_best)
+        print "Avg best fitness:", sum([self.fitness_log_best[i][-1] for i in range(len(self.fitness_log_best))]) / \
+                                   len(self.fitness_log_best)
         print "Best fitness:", max([self.fitness_log_best[i][-1] for i in range(len(self.fitness_log_best))])
         weights = self.ea.phenotype_adult_pool[0].prepare_weights_for_ann()
         FlatlandGui(delay=300,
