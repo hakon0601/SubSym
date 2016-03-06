@@ -63,6 +63,7 @@ class EvolutionaryAlgorithm:
 
     def init_phenotype_type(self, genotype):
         return PhenotypeAnn(genotype,
+                            symbol_set_size=self.symbol_set_size,
                             hidden_layers=self.hidden_layers,
                             activation_functions=self.activation_functions)
 
@@ -70,6 +71,10 @@ class EvolutionaryAlgorithm:
         for i in range(len(self.phenotype_children_pool)):
             self.phenotype_children_pool[i].fitness_value = \
                 self.phenotype_children_pool[i].fitness_evaluation(environments)
+        if self.adult_selection_protocol == 3:
+            for i in range(len(self.phenotype_adult_pool)):
+                self.phenotype_adult_pool[i].fitness_value = \
+                    self.phenotype_adult_pool[i].fitness_evaluation(environments)
 
     def refill_adult_pool(self):
         # Full And over-production. Dependant on difference between adult pool- and genotype pool size

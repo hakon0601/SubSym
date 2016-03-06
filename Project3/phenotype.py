@@ -34,14 +34,15 @@ class Phenotype:
 
 
 class PhenotypeAnn(Phenotype):
-    def __init__(self, genotype, hidden_layers, activation_functions):
+    def __init__(self, genotype, symbol_set_size, hidden_layers, activation_functions):
         Phenotype.__init__(self, genotype)
+        self.symbol_set_size = symbol_set_size
         self.components = self.develop_from_genotype()
         self.hidden_layers = hidden_layers
         self.activation_functions = activation_functions
 
     def develop_from_genotype(self):
-        return self.parent.dna_vector
+        return [self.parent.dna_vector[i] - self.symbol_set_size//2 for i in range(len(self.parent.dna_vector))]
 
     def fitness_evaluation(self, environments=None):
         environments_copy = deepcopy(environments)

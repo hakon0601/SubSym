@@ -52,7 +52,7 @@ class EAGui(tk.Tk):
         tk.Label(ann_entry_group, text="Activation functions (0:Sigmoid, 1:Hyperbolic tangent, 2:Rectify, 3:Softmax):",
                  padx=20).pack(side=tk.LEFT)
         self.activation_functions = tk.StringVar()
-        self.activation_functions.set("0")
+        self.activation_functions.set("3")
         tk.Entry(ann_entry_group, textvariable=self.activation_functions).pack(side=tk.LEFT)
         ann_entry_group.pack(anchor=tk.W)
 
@@ -262,5 +262,5 @@ class EAGui(tk.Tk):
         self.standard_deviation_log[self.current_run].append(self.ea.standard_deviation)
 
 if __name__ == "__main__":
-    app = EAGui(delay=1, nr_of_runs=10)
+    app = EAGui(delay=1, nr_of_runs=1)
     app.mainloop()

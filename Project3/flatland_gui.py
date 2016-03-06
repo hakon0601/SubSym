@@ -2,10 +2,10 @@ from __future__ import division
 import Tkinter as tk
 from direction import Direction
 from cell_item import CellItem
-from copy import deepcopy
 import matplotlib.pyplot as plt
 from constants import *
 from ann import Ann
+from flatland import Flatland
 
 
 class FlatlandGui(tk.Tk):
@@ -29,17 +29,18 @@ class FlatlandGui(tk.Tk):
         self.agent_component = [[] for _ in range(len(self.flatlands))]
         self.cell_size = (SCREEN_WIDTH - (max(2, len(environments) + 1)) * GRID_OFFSET) / \
                          (FLATLAND_WIDTH*max(2, len(environments)))
-        self.canvas = tk.Canvas(self, width=SCREEN_WIDTH, height=SCREEN_HEIGHT, background='white', borderwidth=0)
+        self.canvas = tk.Canvas(self, width=SCREEN_WIDTH, height=(self.cell_size + 4)*self.flatlands[0].height, background='white', borderwidth=0)
         self.canvas.pack(side="top", fill="both", expand="true")
         self.pause = True
         self.bind('<space>', self.toggle_pause)
         self.bind('<n>', self.decrease_simulation_speed)
         self.bind('<m>', self.increase_simulation_speed)
+        self.reset_button = tk.Button(self, text="Reset board", command=self.reset_gui_with_new_environment).pack()
         self.draw_text()
         self.draw_board()
         self.update_text()
         self.draw_agents()
-        self.start_simulation()
+        self.run_simulation()
 
     def toggle_pause(self, event=None):
         self.pause = not self.pause
@@ -74,6 +75,7 @@ class FlatlandGui(tk.Tk):
                                 (x + 1) * self.cell_size + GRID_OFFSET + offset,
                                 (y + 1) * self.cell_size + GRID_OFFSET,
                                 fill="red")
+
 
     def draw_text(self):
         for i in range(len(self.flatlands)):
@@ -200,6 +202,10 @@ class FlatlandGui(tk.Tk):
                 ))
 
     def start_simulation(self):
+        self.current_timestep = 0
+        self.run_simulation()
+
+    def run_simulation(self):
         if not self.pause:
             if self.current_timestep < self.max_timestep:
                 for i in range(len(self.flatlands)):
@@ -227,7 +233,22 @@ class FlatlandGui(tk.Tk):
                 print "Simulation over"
                 self.plot_data(self.fitness_log_average, self.fitness_log_best, self.standard_deviation_log)
                 return
-        self.after(self.delay, lambda: self.start_simulation())
+        self.after(self.delay, lambda: self.run_simulation())
+
+    def reset_gui_with_new_environment(self, event=None):
+        self.flatlands = [Flatland(width=self.flatlands[0].width,
+                                   height=self.flatlands[0].height,
+                                   food_probability=self.flatlands[0].food_probability,
+                                   poison_probability=self.flatlands[0].poison_probability)
+                          for _ in range(len(self.flatlands))]
+        self.pause = True
+        for key, val in self.grid.items():
+            self.canvas.delete(val)
+        for key, val in self.cell_components.items():
+            self.canvas.delete(val)
+        self.draw_board()
+        self.draw_agents()
+        self.start_simulation()
 
     @staticmethod
     def plot_data(fitness_log_average, fitness_log_best, standard_deviation_log):
@@ -239,5 +260,5 @@ class FlatlandGui(tk.Tk):
 
         plt.subplot(212)
         plt.plot(standard_deviation_log[-1], label="Standard deviation")
-        plt.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3, ncol=2, mode="expand", borderaxespad=0.)
+        #plt.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3, ncol=2, mode="expand", borderaxespad=0.)
         plt.show()
