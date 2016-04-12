@@ -24,6 +24,7 @@ class BeerTrackerGui(tk.Tk):
         self.title("Beer Tracker")
         self.grid = {}
         self.score_texts = []
+        self.sensor_texts = []
         self.step_text = None
         self.beer_components = []
         self.agent_components = []
@@ -103,11 +104,16 @@ class BeerTrackerGui(tk.Tk):
                     GRID_OFFSET + (i * (WORLD_WIDTH * self.cell_size + GRID_OFFSET)),
                     GRID_OFFSET + WORLD_HEIGHT * self.cell_size,
                     anchor=tk.NW))
+            self.sensor_texts.append(self.canvas.create_text(
+                    GRID_OFFSET + (i * (WORLD_WIDTH * self.cell_size + GRID_OFFSET)),
+                    2 * GRID_OFFSET + WORLD_HEIGHT * self.cell_size,
+                    anchor=tk.NW))
         self.step_text = self.canvas.create_text(GRID_OFFSET, GRID_OFFSET/2)
 
     def update_text(self):
         for i in range(len(self.environments)):
             self.canvas.itemconfig(self.score_texts[i], text="Score:" + str(self.environments[i].score))
+            self.canvas.itemconfig(self.sensor_texts[i], text="Sensor:" + str(self.environments[i].agent.get_sensor_array(self.environments[i])))
         self.canvas.itemconfig(self.step_text, text="Step: " + str(self.current_timestep + 1))
 
     def draw_agents(self):

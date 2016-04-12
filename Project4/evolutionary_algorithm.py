@@ -71,13 +71,13 @@ class EvolutionaryAlgorithm:
     def do_fitness_testing(self, environments):
         jobs = []
         for i in range(len(self.phenotype_children_pool)):
-            # self.phenotype_children_pool[i].fitness_evaluation(environments)
-            p = Thread(target=self.phenotype_children_pool[i].fitness_evaluation, args=[environments])
-            jobs.append(p)
+            self.phenotype_children_pool[i].fitness_evaluation(environments)
+            # p = Thread(target=self.phenotype_children_pool[i].fitness_evaluation, args=[environments])
+            # jobs.append(p)
             # p.daemon = True
-            p.start()
-        for job in jobs:
-            job.join()
+            # p.start()
+        # for job in jobs:
+        #     job.join()
         # When using mixing in adult selection, the previous generation have to be reevaluated on the new scenarios
         if self.adult_selection_protocol == 3:
             for i in range(len(self.phenotype_adult_pool)):
