@@ -28,6 +28,7 @@ class BeerTrackerGui(tk.Tk):
         self.step_text = None
         self.beer_components = []
         self.agent_components = []
+        self.pulling = [False for _ in range(len(environments))]
         self.cell_size = (SCREEN_WIDTH - (max(2, len(environments) + 1)) * GRID_OFFSET) / \
                          (WORLD_WIDTH * max(2, len(environments)))
         self.canvas = tk.Canvas(self, width=SCREEN_WIDTH, height=(self.cell_size + 4)*self.environments[0].height,
@@ -127,6 +128,10 @@ class BeerTrackerGui(tk.Tk):
             beer_object = self.environments[i].beer_object
             offset = (i * (WORLD_WIDTH * self.cell_size + GRID_OFFSET))
             agent_components = []
+            color = "green"
+            if self.pulling[i]:
+                color = "yellow"
+                self.pulling[i] = False
             for x in agent.range:
                 agent_components.append(self.canvas.create_oval(
                         x * self.cell_size + GRID_OFFSET + offset,
@@ -165,26 +170,56 @@ class BeerTrackerGui(tk.Tk):
                     prediction = self.ann.predict(inputs=ann_inputs)
                     best_index = prediction.argmax()
                     # x_direction_size = int(floor(prediction[best_index] * (AGENT_MAX_NR_OF_STEPS + 1 - 0.0001)))
-                    if best_index == 0:
-                        pass
-                    elif best_index == 1:
-                        self.environments[i].agent.move_right(x_direction_size=1)
-                    elif best_index == 2:
-                        self.environments[i].agent.move_right(x_direction_size=2)
-                    elif best_index == 3:
-                        self.environments[i].agent.move_right(x_direction_size=3)
-                    elif best_index == 4:
-                        self.environments[i].agent.move_right(x_direction_size=4)
-                    elif best_index == 5:
-                        self.environments[i].agent.move_left(x_direction_size=1)
-                    elif best_index == 6:
-                        self.environments[i].agent.move_left(x_direction_size=2)
-                    elif best_index == 7:
-                        self.environments[i].agent.move_left(x_direction_size=3)
-                    elif best_index == 8:
-                        self.environments[i].agent.move_left(x_direction_size=4)
-                    elif self.environments[i].agent.agent_type == 3 and best_index == 9:
-                        self.environments[i].pull_object()
+                    if ONE_HOT_OUTPUT:
+                        if best_index == 0:
+                            pass
+                        elif best_index == 1:
+                            self.environments[i].agent.move_right(x_direction_size=1)
+                        elif best_index == 2:
+                            self.environments[i].agent.move_right(x_direction_size=2)
+                        elif best_index == 3:
+                            self.environments[i].agent.move_right(x_direction_size=3)
+                        elif best_index == 4:
+                            self.environments[i].agent.move_right(x_direction_size=4)
+                        elif best_index == 5:
+                            self.environments[i].agent.move_left(x_direction_size=1)
+                        elif best_index == 6:
+                            self.environments[i].agent.move_left(x_direction_size=2)
+                        elif best_index == 7:
+                            self.environments[i].agent.move_left(x_direction_size=3)
+                        elif best_index == 8:
+                            self.environments[i].agent.move_left(x_direction_size=4)
+                        elif self.environments[i].agent.agent_type == 3 and best_index == 9:
+                            self.environments[i].pull_object()
+                            self.pulling[i] = True
+                    else:
+                        if self.environments[i].agent.agent_type == 3 and prediction[2] > PULL_THRESHOLD:
+                            self.environments[i].pull_object()
+                            self.pulling[i] = True
+                        elif prediction[0] > 0.5:
+                            # Move right
+                            if prediction[1] < 0.2:
+                                pass
+                            elif prediction[1] < 0.4:
+                                self.environments[i].agent.move_right(x_direction_size=1)
+                            elif prediction[1] < 0.6:
+                                self.environments[i].agent.move_right(x_direction_size=2)
+                            elif prediction[1] < 0.8:
+                                self.environments[i].agent.move_right(x_direction_size=3)
+                            else:
+                                self.environments[i].agent.move_right(x_direction_size=4)
+                        else:
+                            # Move left
+                            if prediction[1] < 0.2:
+                                pass
+                            elif prediction[1] < 0.4:
+                                self.environments[i].agent.move_left(x_direction_size=1)
+                            elif prediction[1] < 0.6:
+                                self.environments[i].agent.move_left(x_direction_size=2)
+                            elif prediction[1] < 0.8:
+                                self.environments[i].agent.move_left(x_direction_size=3)
+                            else:
+                                self.environments[i].agent.move_left(x_direction_size=4)
 
                 self.draw_agents()
                 self.draw_beer_objects()

@@ -16,9 +16,6 @@ class BeerTrackerWorld:
         else:
             self.beer_objects = [BeerObject() for _ in range((TIMESTEPS//WORLD_HEIGHT) + 1)]
         self.beer_object = self.beer_objects[0]
-        self.nr_of_small_objects = sum([1 if beer_object.size <= BEER_MAX_WANTED_SIZE else 0
-                                        for beer_object in self.beer_objects])
-        self.nr_of_large_objects = len(self.beer_objects) - self.nr_of_small_objects
         # Two separate things should be measured, the ability to avoid big beers and the ability to catch the small ones
         # The first score list is [taken, avoided, partly avoided] for small, the second is the same for big beers.
         self.score = [[0, 0, 0], [0, 0, 0]]
@@ -60,6 +57,11 @@ class BeerTrackerWorld:
             else:
                 self.score[1][2] += 1
         self.beer_objects
+
+    def set_nr_of_objects(self):
+        self.nr_of_small_objects = sum([1 if beer_object.size <= BEER_MAX_WANTED_SIZE else 0
+                                        for beer_object in self.beer_objects[:self.beer_object_index + 1]])
+        self.nr_of_large_objects = self.beer_object_index + 1 - self.nr_of_small_objects
 
     def reset(self):
         self.score = [[0, 0, 0], [0, 0, 0]]

@@ -47,7 +47,7 @@ class EAGui(tk.Tk):
         ann_entry_group = tk.Frame(self)
         tk.Label(ann_entry_group, text="Hidden layers:").pack(side=tk.LEFT)
         self.hidden_layers = tk.StringVar()
-        self.hidden_layers.set("6")
+        self.hidden_layers.set("3")
         tk.Entry(ann_entry_group, textvariable=self.hidden_layers).pack(side=tk.LEFT)
         tk.Label(ann_entry_group, text="Activation functions (0:Sigmoid, 1:Hyperbolic tangent, 2:Rectify, 3:Softmax):",
                  padx=20).pack(side=tk.LEFT)
@@ -71,7 +71,7 @@ class EAGui(tk.Tk):
         self.horizontal_slider_6.pack(side=tk.LEFT)
         crossover_slider_group.pack(anchor=tk.W)
 
-        self.horizontal_slider_7 = tk.Scale(self, length=1000, from_=1, to=50, orient=tk.HORIZONTAL,
+        self.horizontal_slider_7 = tk.Scale(self, length=1000, from_=1, to=10000, orient=tk.HORIZONTAL,
                                             label="Symbol Set Size")
         self.horizontal_slider_7.set(SYMBOL_SET_SIZE)
         self.horizontal_slider_7.pack(anchor=tk.W)

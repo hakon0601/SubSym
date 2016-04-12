@@ -73,13 +73,17 @@ class PhenotypeBeerTracker(Phenotype):
         # Calculate the average score
         fitness_sum = 0
         for i in range(len(environments_copy)):
-            catching_fitness = environments_copy[i].score[0][0] / environments_copy[i].nr_of_small_objects
-            #catching_fitness += (environments_copy[i].score[0][2] * 0.1) / environments_copy[i].nr_of_small_objects
-            catching_fitness *= 0.6
-            avoidance_fitness = environments_copy[i].score[1][1] / environments_copy[i].nr_of_large_objects
-            #avoidance_fitness += (environments_copy[i].score[1][2] * 0.1) / environments_copy[i].nr_of_large_objects
-            avoidance_fitness *= 0.4
-            fitness_sum += catching_fitness + avoidance_fitness
+            if environments_copy[i].agent.agent_type == 3000000000:
+                # TODO calculate pull fitness
+                pass
+            else:
+                catching_fitness = environments_copy[i].score[0][0] / environments_copy[i].nr_of_small_objects
+                #catching_fitness += (environments_copy[i].score[0][2] * 0.1) / environments_copy[i].nr_of_small_objects
+                catching_fitness *= 0.9
+                avoidance_fitness = environments_copy[i].score[1][1] / environments_copy[i].nr_of_large_objects
+                #avoidance_fitness += (environments_copy[i].score[1][2] * 0.1) / environments_copy[i].nr_of_large_objects
+                avoidance_fitness *= 0.1
+                fitness_sum += catching_fitness + avoidance_fitness
         return fitness_sum / len(environments_copy)
 
     # Testing the phenotype configuration on the environments
@@ -116,7 +120,7 @@ class PhenotypeBeerTracker(Phenotype):
                     elif environments_copy[j].agent.agent_type == 3 and best_index == 9:
                         environments_copy[j].pull_object()
                 else:
-                    if environments_copy[j].agent.agent_type == 3 and prediction[2] > prediction[0]:
+                    if environments_copy[j].agent.agent_type == 3 and prediction[2] > PULL_THRESHOLD:
                         environments_copy[j].pull_object()
                     elif prediction[0] > 0.5:
                         # Move right
@@ -142,7 +146,7 @@ class PhenotypeBeerTracker(Phenotype):
                             environments_copy[j].agent.move_left(x_direction_size=3)
                         else:
                             environments_copy[j].agent.move_left(x_direction_size=4)
-
+            environments_copy[j].set_nr_of_objects()
 
     def prepare_weights_for_ann(self):
         weights = []
