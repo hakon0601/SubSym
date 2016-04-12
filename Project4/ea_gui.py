@@ -3,6 +3,7 @@ from beertracker_world import BeerTrackerWorld
 from evolutionary_algorithm import EvolutionaryAlgorithm
 from beertracker_gui import BeerTrackerGui
 from constants import *
+from time import time
 
 
 class EAGui(tk.Tk):
@@ -211,10 +212,13 @@ class EAGui(tk.Tk):
         self.fitness_log_average.append([])
         self.fitness_log_best.append([])
         self.standard_deviation_log.append([])
+        self.timer = time()
         self.run_ea()
 
     def run_ea(self):
         self.ea.run_one_life_cycle(self.beertracker_worlds)
+        if self.current_generation == 0:
+            self.timer = time() - self.timer
         self.current_generation += 1
         self.write_to_log()
         self.reset_scenarios()
@@ -289,8 +293,9 @@ class EAGui(tk.Tk):
         print "Gen:", "%.2d" % self.current_generation, "\tBest fitness:", \
             "%.3f" % round(self.ea.phenotype_adult_pool[0].fitness_value, 3), "\tAverage fitness:", \
             "%.3f" % round(self.ea.avg_fitness, 3), "\tStandard deviation: ", \
-            "%.5f" % round(self.ea.standard_deviation, 3), "\tBest Phenotype:", \
-            self.ea.phenotype_adult_pool[0].components
+            "%.5f" % round(self.ea.standard_deviation, 3), "\tTime left:", \
+            "%02d:%02d" % (divmod(self.timer * (self.horizontal_slider_12.get() - self.current_generation), 60)), \
+            "\tBest Phenotype:", self.ea.phenotype_adult_pool[0].components
         self.fitness_log_average[self.current_run].append(self.ea.avg_fitness)
         self.fitness_log_best[self.current_run].append(self.ea.phenotype_adult_pool[0].fitness_value)
         self.standard_deviation_log[self.current_run].append(self.ea.standard_deviation)

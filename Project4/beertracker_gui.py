@@ -139,7 +139,7 @@ class BeerTrackerGui(tk.Tk):
                         (WORLD_HEIGHT - 1) * self.cell_size + GRID_OFFSET,
                         (x + 1) * self.cell_size + GRID_OFFSET + offset,
                         (WORLD_HEIGHT) * self.cell_size + GRID_OFFSET,
-                        fill="green"))
+                        fill=color))
             self.agent_components.append(agent_components)
 
     #TODO fix better update
