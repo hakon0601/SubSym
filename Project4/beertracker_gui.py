@@ -5,6 +5,7 @@ from constants import *
 from ctrann import Ann
 from beertracker_world import BeerTrackerWorld
 from math import floor
+from phenotype import PhenotypeBeerTracker
 
 
 class BeerTrackerGui(tk.Tk):

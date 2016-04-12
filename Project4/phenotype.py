@@ -73,17 +73,23 @@ class PhenotypeBeerTracker(Phenotype):
         # Calculate the average score
         fitness_sum = 0
         for i in range(len(environments_copy)):
-            if environments_copy[i].agent.agent_type == 3000000000:
-                # TODO calculate pull fitness
-                pass
-            else:
+            if environments_copy[i].agent.agent_type == 1:
                 catching_fitness = environments_copy[i].score[0][0] / environments_copy[i].nr_of_small_objects
                 #catching_fitness += (environments_copy[i].score[0][2] * 0.1) / environments_copy[i].nr_of_small_objects
-                catching_fitness *= 0.9
+                catching_fitness *= 0.6
                 avoidance_fitness = environments_copy[i].score[1][1] / environments_copy[i].nr_of_large_objects
                 #avoidance_fitness += (environments_copy[i].score[1][2] * 0.1) / environments_copy[i].nr_of_large_objects
+                avoidance_fitness *= 0.4
+                fitness_sum += catching_fitness + avoidance_fitness
+            elif environments_copy[i].agent.agent_type == 2:
+                catching_fitness = environments_copy[i].score[0][0] / environments_copy[i].nr_of_small_objects
+                catching_fitness *= 0.9
+                avoidance_fitness = environments_copy[i].score[1][1] / environments_copy[i].nr_of_large_objects
                 avoidance_fitness *= 0.1
                 fitness_sum += catching_fitness + avoidance_fitness
+            else:
+                # TODO make pull fitness
+                pass
         return fitness_sum / len(environments_copy)
 
     # Testing the phenotype configuration on the environments
