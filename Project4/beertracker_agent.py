@@ -24,7 +24,7 @@ class BeerTrackerAgent:
         # Wall detection sensors
         if self.agent_type == 2:
             sensor_array.append(1 if self.x == 0 else 0)
-            sensor_array.append(1 if self.x == WORLD_WIDTH - 1 else 0)
+            sensor_array.append(1 if self.x == WORLD_WIDTH - 1 - self.size else 0)
         if CENTERED_NODE:
             if (sensor_array[0] == 0 and sensor_array[-1] == 0) and 1 in sensor_array[1:-1]:
                 sensor_array.append(1)

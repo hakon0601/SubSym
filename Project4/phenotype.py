@@ -94,26 +94,55 @@ class PhenotypeBeerTracker(Phenotype):
                 ann_inputs = agent_sensor_output
                 prediction = ann.predict(inputs=ann_inputs)
                 best_index = prediction.argmax()
-                if best_index == 0:
-                    pass
-                elif best_index == 1:
-                    environments_copy[j].agent.move_right(x_direction_size=1)
-                elif best_index == 2:
-                    environments_copy[j].agent.move_right(x_direction_size=2)
-                elif best_index == 3:
-                    environments_copy[j].agent.move_right(x_direction_size=3)
-                elif best_index == 4:
-                    environments_copy[j].agent.move_right(x_direction_size=4)
-                elif best_index == 5:
-                    environments_copy[j].agent.move_left(x_direction_size=1)
-                elif best_index == 6:
-                    environments_copy[j].agent.move_left(x_direction_size=2)
-                elif best_index == 7:
-                    environments_copy[j].agent.move_left(x_direction_size=3)
-                elif best_index == 8:
-                    environments_copy[j].agent.move_left(x_direction_size=4)
-                elif environments_copy[j].agent.agent_type == 3 and best_index == 9:
-                    environments_copy[j].pull_object()
+                if ONE_HOT_OUTPUT:
+                    if best_index == 0:
+                        pass
+                    elif best_index == 1:
+                        environments_copy[j].agent.move_right(x_direction_size=1)
+                    elif best_index == 2:
+                        environments_copy[j].agent.move_right(x_direction_size=2)
+                    elif best_index == 3:
+                        environments_copy[j].agent.move_right(x_direction_size=3)
+                    elif best_index == 4:
+                        environments_copy[j].agent.move_right(x_direction_size=4)
+                    elif best_index == 5:
+                        environments_copy[j].agent.move_left(x_direction_size=1)
+                    elif best_index == 6:
+                        environments_copy[j].agent.move_left(x_direction_size=2)
+                    elif best_index == 7:
+                        environments_copy[j].agent.move_left(x_direction_size=3)
+                    elif best_index == 8:
+                        environments_copy[j].agent.move_left(x_direction_size=4)
+                    elif environments_copy[j].agent.agent_type == 3 and best_index == 9:
+                        environments_copy[j].pull_object()
+                else:
+                    if environments_copy[j].agent.agent_type == 3 and prediction[2] > prediction[0]:
+                        environments_copy[j].pull_object()
+                    elif prediction[0] > 0.5:
+                        # Move right
+                        if prediction[1] < 0.2:
+                            pass
+                        elif prediction[1] < 0.4:
+                            environments_copy[j].agent.move_right(x_direction_size=1)
+                        elif prediction[1] < 0.6:
+                            environments_copy[j].agent.move_right(x_direction_size=2)
+                        elif prediction[1] < 0.8:
+                            environments_copy[j].agent.move_right(x_direction_size=3)
+                        else:
+                            environments_copy[j].agent.move_right(x_direction_size=4)
+                    else:
+                        # Move left
+                        if prediction[1] < 0.2:
+                            pass
+                        elif prediction[1] < 0.4:
+                            environments_copy[j].agent.move_left(x_direction_size=1)
+                        elif prediction[1] < 0.6:
+                            environments_copy[j].agent.move_left(x_direction_size=2)
+                        elif prediction[1] < 0.8:
+                            environments_copy[j].agent.move_left(x_direction_size=3)
+                        else:
+                            environments_copy[j].agent.move_left(x_direction_size=4)
+
 
     def prepare_weights_for_ann(self):
         weights = []

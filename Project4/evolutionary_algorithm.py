@@ -74,23 +74,11 @@ class EvolutionaryAlgorithm:
         for i in range(len(res)):
             self.phenotype_children_pool[i].fitness_value = res[i]
 
-        #
-        # jobs = []
-        # for i in range(len(self.phenotype_children_pool)):
-        #     parmap(self.phenotype_children_pool[i].fitness_evaluation, [environments])
-        #     # self.phenotype_children_pool[i].fitness_evaluation(environments)
-        #     # p = Thread(target=self.phenotype_children_pool[i].fitness_evaluation, args=[environments])
-        #     # jobs.append(p)
-        #     # # p.daemon = True
-        #     # p.start()
-        # for job in jobs:
-        #     job.join()
         # When using mixing in adult selection, the previous generation have to be reevaluated on the new scenarios
-        # if self.adult_selection_protocol == 3:
-        #     for i in range(len(self.phenotype_adult_pool)):
-        #         p = Thread(target=self.phenotype_adult_pool[i].fitness_evaluation, args=(environments))
-        #         jobs.append(p)
-        #         p.start()
+        if self.adult_selection_protocol == 3:
+            res = parmap(PhenotypeBeerTracker.fitness_evaluation, self.phenotype_adult_pool)
+            for i in range(len(res)):
+                self.phenotype_adult_pool[i].fitness_value = res[i]
 
     def refill_adult_pool(self):
         # Full And over-production. Dependant on difference between adult pool- and genotype pool size
