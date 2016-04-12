@@ -90,7 +90,7 @@ class EAGui(tk.Tk):
         self.horizontal_slider_10 = tk.Scale(self, length=1000, from_=1, to=1000, orient=tk.HORIZONTAL,
                                              label="Initial Temperature")
         self.horizontal_slider_10.set(INITIAL_TEMPERATURE)
-        self.horizontal_slider_10.pack()
+        # self.horizontal_slider_10.pack()
         self.horizontal_slider_11 = tk.Scale(self, length=1000, from_=1, to=20, orient=tk.HORIZONTAL,
                                              label="Nr of Scenarios")
         self.horizontal_slider_11.set(NR_OF_SCENARIOS)

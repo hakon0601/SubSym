@@ -76,7 +76,7 @@ class PhenotypeBeerTracker(Phenotype):
             #avoidance_fitness += (environments_copy[i].score[1][2] * 0.1) / environments_copy[i].nr_of_large_objects
             avoidance_fitness *= 0.4
             fitness_sum += catching_fitness + avoidance_fitness
-        return fitness_sum / len(environments_copy)
+        self.fitness_value = fitness_sum / len(environments_copy)
 
     # Testing the phenotype configuration on the environments
     def run_simulation(self, environments_copy):
@@ -133,7 +133,6 @@ class PhenotypeBeerTracker(Phenotype):
 
             weights[k].append(self.components[last_bias_component_index:last_bias_component_index + self.hidden_layers[k + 1]])
             last_bias_component_index += self.hidden_layers[k + 1]
-
         return weights
 
     def map_to_range(self, value, old_range_min, old_range_max, new_range_min, new_range_max):
