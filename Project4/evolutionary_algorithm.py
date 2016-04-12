@@ -6,7 +6,7 @@ from math import exp
 from genotype import Genotype
 from phenotype import PhenotypeBeerTracker
 from threading import Thread
-
+from multi import parmap
 
 class EvolutionaryAlgorithm:
     def __init__(self, genotype_pool_size, adult_pool_size, elitism,
@@ -69,21 +69,28 @@ class EvolutionaryAlgorithm:
                                     activation_functions=self.activation_functions)
 
     def do_fitness_testing(self, environments):
-        jobs = []
-        for i in range(len(self.phenotype_children_pool)):
-            # self.phenotype_children_pool[i].fitness_evaluation(environments)
-            p = Thread(target=self.phenotype_children_pool[i].fitness_evaluation, args=[environments])
-            jobs.append(p)
-            # p.daemon = True
-            p.start()
-        for job in jobs:
-            job.join()
+        PhenotypeBeerTracker.environments_for_fitness = environments
+        res = parmap(PhenotypeBeerTracker.fitness_evaluation, self.phenotype_children_pool)
+        for i in range(len(res)):
+            self.phenotype_children_pool[i].fitness_value = res[i]
+
+        #
+        # jobs = []
+        # for i in range(len(self.phenotype_children_pool)):
+        #     parmap(self.phenotype_children_pool[i].fitness_evaluation, [environments])
+        #     # self.phenotype_children_pool[i].fitness_evaluation(environments)
+        #     # p = Thread(target=self.phenotype_children_pool[i].fitness_evaluation, args=[environments])
+        #     # jobs.append(p)
+        #     # # p.daemon = True
+        #     # p.start()
+        # for job in jobs:
+        #     job.join()
         # When using mixing in adult selection, the previous generation have to be reevaluated on the new scenarios
-        if self.adult_selection_protocol == 3:
-            for i in range(len(self.phenotype_adult_pool)):
-                p = Thread(target=self.phenotype_adult_pool[i].fitness_evaluation, args=(environments))
-                jobs.append(p)
-                p.start()
+        # if self.adult_selection_protocol == 3:
+        #     for i in range(len(self.phenotype_adult_pool)):
+        #         p = Thread(target=self.phenotype_adult_pool[i].fitness_evaluation, args=(environments))
+        #         jobs.append(p)
+        #         p.start()
 
     def refill_adult_pool(self):
         # Full And over-production. Dependant on difference between adult pool- and genotype pool size

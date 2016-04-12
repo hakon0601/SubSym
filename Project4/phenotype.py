@@ -34,6 +34,9 @@ class Phenotype:
 
 
 class PhenotypeBeerTracker(Phenotype):
+
+    environments_for_fitness = None
+
     def __init__(self, genotype, symbol_set_size, hidden_layers, activation_functions):
         Phenotype.__init__(self, genotype)
         self.symbol_set_size = symbol_set_size
@@ -63,9 +66,10 @@ class PhenotypeBeerTracker(Phenotype):
                                                 0, self.symbol_set_size - 1, TIME_CONSTANT_MIN, TIME_CONSTANT_MAX))
         return components
 
-    def fitness_evaluation(self, environments=None):
-        environments_copy = deepcopy(environments)
-        self.run_simulation(environments_copy)
+    @staticmethod
+    def fitness_evaluation(phenotype):
+        environments_copy = deepcopy(PhenotypeBeerTracker.environments_for_fitness)
+        phenotype.run_simulation(environments_copy)
         # Calculate the average score
         fitness_sum = 0
         for i in range(len(environments_copy)):
@@ -76,7 +80,7 @@ class PhenotypeBeerTracker(Phenotype):
             #avoidance_fitness += (environments_copy[i].score[1][2] * 0.1) / environments_copy[i].nr_of_large_objects
             avoidance_fitness *= 0.4
             fitness_sum += catching_fitness + avoidance_fitness
-        self.fitness_value = fitness_sum / len(environments_copy)
+        return fitness_sum / len(environments_copy)
 
     # Testing the phenotype configuration on the environments
     def run_simulation(self, environments_copy):
