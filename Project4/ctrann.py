@@ -14,7 +14,7 @@ class Ann:
                       for i in range(1, len(self.hidden_layers))]
         self.time_constants = [[time_constants[sum(self.hidden_layers[1:(i - 1)]) + j] for j in range(self.hidden_layers[i])]
                       for i in range(1, len(self.hidden_layers))]
-        self.neuron_internal_state = [np.array([0 for _ in range(self.hidden_layers[i])]) for i in range(1, len(self.hidden_layers))]
+        self.neuron_internal_state = [np.array([0.0 for _ in range(self.hidden_layers[i])]) for i in range(1, len(self.hidden_layers))]
 
     def activation_function(self, dot_product, activation_function):
         if activation_function == ActivationFunction.sigmoid:
@@ -60,8 +60,11 @@ class Ann:
             internal_state[i] += (-internal_state[i] + signal[i]) / float(time_constants[i])
 
     def calculate_state_output(self, internal_state, gains):
+        a = 1 / (1 + np.exp(-internal_state * gains))
         # calculate and return new signal using the output equation and the gains term
         output_values = []
         for j in range(len(internal_state)):
             output_values.append(1 / (1 + exp(-gains[j] * internal_state[j])))
-        return np.array(output_values)
+        b = np.array(output_values)
+        return a
+
