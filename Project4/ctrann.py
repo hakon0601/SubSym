@@ -51,6 +51,7 @@ class Ann:
             signal = np.append(signal, 1) # Bias node with a signal of 1
             dot_product = np.dot(signal, self.weights[i])
             signal = self.activation_function(dot_product, ActivationFunction(self.activation_functions[i]))
+#            signal = self.calculate_state_output(dot_product, self.gains[i])
             self.leak_from_state(self.neuron_internal_state[i], signal, self.time_constants[i])
         return signal
 
@@ -60,11 +61,4 @@ class Ann:
             internal_state[i] += (-internal_state[i] + signal[i]) / float(time_constants[i])
 
     def calculate_state_output(self, internal_state, gains):
-        a = 1 / (1 + np.exp(-internal_state * gains))
-        # calculate and return new signal using the output equation and the gains term
-        output_values = []
-        for j in range(len(internal_state)):
-            output_values.append(1 / (1 + exp(-gains[j] * internal_state[j])))
-        b = np.array(output_values)
-        return a
-
+        return 1 / (1 + np.exp(-internal_state * gains))

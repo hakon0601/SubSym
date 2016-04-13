@@ -247,7 +247,8 @@ class EAGui(tk.Tk):
                     time_constant=self.ea.phenotype_adult_pool[0].get_time_constants(),
                     fitness_log_average=self.fitness_log_average,
                     fitness_log_best=self.fitness_log_best,
-                    standard_deviation_log=self.standard_deviation_log)
+                    standard_deviation_log=self.standard_deviation_log,
+                    phenotype=self.ea.phenotype_adult_pool[0])
         print "Average Generations:", \
             sum([len(l) for l in self.fitness_log_average]) / len(self.fitness_log_average)
 
@@ -293,7 +294,8 @@ class EAGui(tk.Tk):
         print "Gen:", "%.2d" % self.current_generation, "\tBest fitness:", \
             "%.3f" % round(self.ea.phenotype_adult_pool[0].fitness_value, 3), "\tAverage fitness:", \
             "%.3f" % round(self.ea.avg_fitness, 3), "\tStandard deviation: ", \
-            "%.5f" % round(self.ea.standard_deviation, 3), "\tTime left:", \
+            "%.5f" % round(self.ea.standard_deviation, 3), \
+            "Fitness components:", self.ea.phenotype_adult_pool[0].fitness_components, "\tTime left:", \
             "%02d:%02d" % (divmod(self.timer * (self.horizontal_slider_12.get() - self.current_generation), 60)), \
             "\tBest Phenotype:", self.ea.phenotype_adult_pool[0].components
         self.fitness_log_average[self.current_run].append(self.ea.avg_fitness)

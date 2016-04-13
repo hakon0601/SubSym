@@ -36,6 +36,8 @@ class Phenotype:
 class PhenotypeBeerTracker(Phenotype):
 
     environments_for_fitness = None
+    best_capture = 1
+    best_avoidance = 1
 
     def __init__(self, genotype, symbol_set_size, hidden_layers, activation_functions):
         Phenotype.__init__(self, genotype)
@@ -44,6 +46,7 @@ class PhenotypeBeerTracker(Phenotype):
         self.nr_of_non_input_neuron = sum(self.hidden_layers[1:])
         self.components = self.develop_from_genotype()
         self.activation_functions = activation_functions
+        self.fitness_components = []
 
     def develop_from_genotype(self):
         # Regular weights
@@ -70,36 +73,60 @@ class PhenotypeBeerTracker(Phenotype):
     def fitness_evaluation(phenotype):
         environments_copy = deepcopy(PhenotypeBeerTracker.environments_for_fitness)
         phenotype.run_simulation(environments_copy)
+        fitness_components = []
         # Calculate the average score
         fitness_sum = 0
         for i in range(len(environments_copy)):
+            speed_fitness = 0
+            speed_weight = 0
+            fitness_components.append([])
             if environments_copy[i].agent.agent_type == 1:
+                catching_weight = 0.65
                 catching_fitness = environments_copy[i].score[0][0] / sum(environments_copy[i].score[0])
-                #catching_fitness += (environments_copy[i].score[0][2] * 0.1) / environments_copy[i].nr_of_small_objects
-                catching_fitness *= 0.6
                 avoidance_fitness = environments_copy[i].score[1][1] / sum(environments_copy[i].score[1])
-                #avoidance_fitness += (environments_copy[i].score[1][2] * 0.1) / environments_copy[i].nr_of_large_objects
-                avoidance_fitness *= 0.4
-                fitness_sum += catching_fitness + avoidance_fitness
+                avoidance_weight = 0.35
             elif environments_copy[i].agent.agent_type == 2:
                 catching_fitness = environments_copy[i].score[0][0] / sum(environments_copy[i].score[0])
-                catching_fitness *= 0.5
+                catching_weight = 0.7
                 avoidance_fitness = environments_copy[i].score[1][1] / sum(environments_copy[i].score[1])
-                avoidance_fitness *= 0.5
-                fitness_sum += catching_fitness + avoidance_fitness
+                avoidance_weight = 0.3
             else:
-                # TODO make pull fitness
-                catching_fitness = (environments_copy[i].score[0][0] + environments_copy[i].pull_score[0][0]) / (sum(environments_copy[i].score[0]) + sum(environments_copy[i].pull_score[0]) + 1)
-                catching_fitness *= 1.0
-                avoidance_fitness = (environments_copy[i].score[1][1] + environments_copy[i].pull_score[1][1]) / (sum(environments_copy[i].score[1]) + sum(environments_copy[i].pull_score[1]) + 1)
-                avoidance_fitness *= 0.0
-                pull_catching_fitness = environments_copy[i].pull_score[0][0] / (sum(environments_copy[i].pull_score[0]) + 1)
-                pull_catching_fitness *= 0.0
-                pull_avoidance_fitness = environments_copy[i].pull_score[1][1] / (sum(environments_copy[i].pull_score[1]) + 1)
-                pull_avoidance_fitness *= 0.0
+                if (environments_copy[i].score[0][0] + environments_copy[i].pull_score[0][0]) > PhenotypeBeerTracker.best_capture:
+                    PhenotypeBeerTracker.best_capture = (environments_copy[i].score[0][0] + environments_copy[i].pull_score[0][0])
+                if (environments_copy[i].score[1][1] + environments_copy[i].pull_score[1][1]) > PhenotypeBeerTracker.best_avoidance:
+                    PhenotypeBeerTracker.best_avoidance = (environments_copy[i].score[1][1] + environments_copy[i].pull_score[1][1])
+                #
+                # # TODO make pull fitness
+                # catching_fitness = (environments_copy[i].score[0][0] + environments_copy[i].pull_score[0][0]) / (PhenotypeBeerTracker.best_capture + 1)
+                # catching_fitness *= 0.5
+                # avoidance_fitness = (environments_copy[i].score[1][1] + environments_copy[i].pull_score[1][1]) / (PhenotypeBeerTracker.best_avoidance + 1)
+                # avoidance_fitness *= 0.5
+                # speed_fitness = (sum(environments_copy[i].score[0]) + sum(environments_copy[i].pull_score[0])) / float(len(environments_copy[i].beer_objects))
+                # speed_fitness *= 0.1
+                # print sum(environments_copy[i].pull_score[0]) + sum(environments_copy[i].pull_score[0])
+                # pull_catching_fitness = environments_copy[i].pull_score[0][0] / (sum(environments_copy[i].pull_score[0]) + 1)
+                # pull_catching_fitness *= 0.0
+                # pull_avoidance_fitness = environments_copy[i].pull_score[1][1] / (sum(environments_copy[i].pull_score[1]) + 1)
+                # pull_avoidance_fitness *= 0.0
+                # fitness_sum += catching_fitness + avoidance_fitness + pull_catching_fitness + pull_avoidance_fitness
 
-                fitness_sum += catching_fitness + avoidance_fitness + pull_catching_fitness + pull_avoidance_fitness
-        return fitness_sum / len(environments_copy)
+                catching_fitness = (environments_copy[i].score[0][0] + environments_copy[i].pull_score[0][0]) / float(sum(environments_copy[i].score[0]) + sum(environments_copy[i].pull_score[0]))
+                catching_weight = 0.5
+                avoidance_fitness = (environments_copy[i].score[1][1] + environments_copy[i].pull_score[1][1]) / float(sum(environments_copy[i].score[1]) + sum(environments_copy[i].pull_score[1]))
+                avoidance_weight = 0.1
+                speed_fitness = (sum(environments_copy[i].score[0]) + sum(environments_copy[i].pull_score[0])) / float(len(environments_copy[i].beer_objects))
+                speed_weight = 0.4
+
+            catching_fitness *= catching_weight
+            avoidance_fitness *= avoidance_weight
+            speed_fitness *= speed_weight
+            fitness_components[i].append(round(catching_fitness/catching_weight, 3))
+            fitness_components[i].append(round(avoidance_fitness/avoidance_weight, 3))
+            fitness_components[i].append(round(speed_fitness/speed_weight, 3))
+
+            fitness_sum += catching_fitness + avoidance_fitness + speed_fitness
+
+        return fitness_sum / len(environments_copy), fitness_components
 
     # Testing the phenotype configuration on the environments
     def run_simulation(self, environments_copy):
@@ -135,11 +162,11 @@ class PhenotypeBeerTracker(Phenotype):
                     elif environments_copy[j].agent.agent_type == 3 and best_index == 9:
                         environments_copy[j].pull_object()
                 else:
-                    if environments_copy[j].agent.agent_type == 3 and prediction[2] > PULL_THRESHOLD:
-                        environments_copy[j].pull_object()
-                    elif prediction[0] > 0.5:
+                    if prediction[0] > 0.5:
+                        if environments_copy[j].agent.agent_type == 3 and prediction[2] > prediction[0]:
+                            environments_copy[j].pull_object()
                         # Move right
-                        if prediction[1] < 0.2:
+                        elif prediction[1] < 0.2:
                             pass
                         elif prediction[1] < 0.4:
                             environments_copy[j].agent.move_right(x_direction_size=1)
@@ -150,8 +177,10 @@ class PhenotypeBeerTracker(Phenotype):
                         else:
                             environments_copy[j].agent.move_right(x_direction_size=4)
                     else:
+                        if environments_copy[j].agent.agent_type == 3 and prediction[2] < prediction[0]:
+                            environments_copy[j].pull_object()
                         # Move left
-                        if prediction[1] < 0.2:
+                        elif prediction[1] < 0.2:
                             pass
                         elif prediction[1] < 0.4:
                             environments_copy[j].agent.move_left(x_direction_size=1)

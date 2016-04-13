@@ -7,6 +7,7 @@ from genotype import Genotype
 from phenotype import PhenotypeBeerTracker
 from threading import Thread
 from multi import parmap
+from constants import *
 
 class EvolutionaryAlgorithm:
     def __init__(self, genotype_pool_size, adult_pool_size, elitism,
@@ -70,15 +71,24 @@ class EvolutionaryAlgorithm:
 
     def do_fitness_testing(self, environments):
         PhenotypeBeerTracker.environments_for_fitness = environments
-        res = parmap(PhenotypeBeerTracker.fitness_evaluation, self.phenotype_children_pool)
+        res = []
+        if MULTIPROCESSING:
+            res = parmap(PhenotypeBeerTracker.fitness_evaluation, self.phenotype_children_pool)
+        else:
+            #res = [PhenotypeBeerTracker.fitness_evaluation(phenotype) for phenotype in self.phenotype_children_pool]
+            for phenotype in self.phenotype_children_pool:
+                a = PhenotypeBeerTracker.fitness_evaluation(phenotype)
+                res.append(a)
         for i in range(len(res)):
-            self.phenotype_children_pool[i].fitness_value = res[i]
+            self.phenotype_children_pool[i].fitness_value = res[i][0]
+            self.phenotype_children_pool[i].fitness_components = res[i][1]
 
         # When using mixing in adult selection, the previous generation have to be reevaluated on the new scenarios
         if self.adult_selection_protocol == 3:
             res = parmap(PhenotypeBeerTracker.fitness_evaluation, self.phenotype_adult_pool)
             for i in range(len(res)):
-                self.phenotype_adult_pool[i].fitness_value = res[i]
+                self.phenotype_adult_pool[i].fitness_value = res[i][0]
+                self.phenotype_adult_pool[i].fitness_components = res[i][1]
 
     def refill_adult_pool(self):
         # Full And over-production. Dependant on difference between adult pool- and genotype pool size

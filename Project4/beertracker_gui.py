@@ -11,12 +11,14 @@ from phenotype import PhenotypeBeerTracker
 class BeerTrackerGui(tk.Tk):
     def __init__(self, delay, environments, ann_weights, layers_list, activation_functions,
                  gains, time_constant,
-                 fitness_log_average, fitness_log_best, standard_deviation_log):
+                 fitness_log_average, fitness_log_best, standard_deviation_log,
+                 phenotype):
         tk.Tk.__init__(self)
         self.delay = delay
         self.environments = environments
         self.ann = Ann(weights=ann_weights, hidden_layers=layers_list, activation_functions=activation_functions,
                        gains=gains, time_constants=time_constant)
+        self.phenotype = phenotype
         self.current_timestep = 0
         self.max_timestep = TIMESTEPS
         self.standard_deviation_log = standard_deviation_log
@@ -27,13 +29,14 @@ class BeerTrackerGui(tk.Tk):
         self.score_texts = []
         self.pull_score_texts = []
         self.sensor_texts = []
+        self.fitness_texts = []
         self.step_text = None
         self.beer_components = []
         self.agent_components = []
         self.pulling = [False for _ in range(len(environments))]
         self.cell_size = (SCREEN_WIDTH - (max(2, len(environments) + 1)) * GRID_OFFSET) / \
                          (WORLD_WIDTH * max(2, len(environments)))
-        self.canvas = tk.Canvas(self, width=SCREEN_WIDTH, height=(self.cell_size + 4)*self.environments[0].height,
+        self.canvas = tk.Canvas(self, width=SCREEN_WIDTH, height=(self.cell_size + 8)*self.environments[0].height,
                                 background='white', borderwidth=0)
         self.canvas.pack(side="top", fill="both", expand="true")
         self.pause = True
@@ -114,6 +117,10 @@ class BeerTrackerGui(tk.Tk):
             self.sensor_texts.append(self.canvas.create_text(
                     GRID_OFFSET + (i * (WORLD_WIDTH * self.cell_size + GRID_OFFSET)),
                     3 * GRID_OFFSET + WORLD_HEIGHT * self.cell_size,
+                    anchor=tk.NW))
+            self.fitness_texts.append(self.canvas.create_text(
+                    GRID_OFFSET + (i * (WORLD_WIDTH * self.cell_size + GRID_OFFSET)),
+                    4 * GRID_OFFSET + WORLD_HEIGHT * self.cell_size,
                     anchor=tk.NW))
 
         self.step_text = self.canvas.create_text(GRID_OFFSET, GRID_OFFSET/2)
@@ -201,12 +208,12 @@ class BeerTrackerGui(tk.Tk):
                             self.environments[i].pull_object()
                             self.pulling[i] = True
                     else:
-                        if self.environments[i].agent.agent_type == 3 and prediction[2] > PULL_THRESHOLD:
-                            self.environments[i].pull_object()
-                            self.pulling[i] = True
-                        elif prediction[0] > 0.5:
+                        if prediction[0] > 0.5:
+                            if self.environments[i].agent.agent_type == 3 and prediction[2] > prediction[0]:
+                                self.environments[i].pull_object()
+                                self.pulling[i] = True
                             # Move right
-                            if prediction[1] < 0.2:
+                            elif prediction[1] < 0.2:
                                 pass
                             elif prediction[1] < 0.4:
                                 self.environments[i].agent.move_right(x_direction_size=1)
@@ -217,8 +224,11 @@ class BeerTrackerGui(tk.Tk):
                             else:
                                 self.environments[i].agent.move_right(x_direction_size=4)
                         else:
+                            if self.environments[i].agent.agent_type == 3 and prediction[2] < prediction[0]:
+                                self.environments[i].pull_object()
+                                self.pulling[i] = True
                             # Move left
-                            if prediction[1] < 0.2:
+                            elif prediction[1] < 0.2:
                                 pass
                             elif prediction[1] < 0.4:
                                 self.environments[i].agent.move_left(x_direction_size=1)
@@ -235,6 +245,12 @@ class BeerTrackerGui(tk.Tk):
                 self.current_timestep += 1
             else:
                 print "Simulation over"
+                PhenotypeBeerTracker.environments_for_fitness = self.environments
+                for l in range(len(self.environments)):
+                    PhenotypeBeerTracker.environments_for_fitness[l].reset()
+                    fitness = PhenotypeBeerTracker.fitness_evaluation(self.phenotype)
+                    self.canvas.itemconfig(self.fitness_texts[l], text="Fitness:" + str(round(fitness[0], 3)) + " "+ str(fitness[1][l]))
+
                 #self.plot_data(self.fitness_log_average, self.fitness_log_best, self.standard_deviation_log)
                 return
         self.after(self.delay, lambda: self.run_simulation())

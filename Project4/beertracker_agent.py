@@ -38,14 +38,14 @@ class BeerTrackerAgent:
         return sensor_array
 
     def move_left(self, x_direction_size=1):
-        if self.agent_type == 1:
+        if self.agent_type == 1 or self.agent_type == 3:
             self.x = (self.x - x_direction_size) % WORLD_WIDTH
         elif self.agent_type == 2:
             self.x = max(0, self.x - x_direction_size)
         self.update_range()
 
     def move_right(self, x_direction_size=1):
-        if self.agent_type == 1:
+        if self.agent_type == 1 or self.agent_type == 3:
             self.x = (self.x + x_direction_size) % WORLD_WIDTH
         elif self.agent_type == 2:
             self.x = min(self.x + x_direction_size, WORLD_WIDTH - self.size)
