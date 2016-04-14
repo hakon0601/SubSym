@@ -2,23 +2,22 @@ from __future__ import division
 import Tkinter as tk
 import matplotlib.pyplot as plt
 from constants import *
-from ctrann import Ann
+from ctrann import CTRAnn
 from beertracker_world import BeerTrackerWorld
 from math import floor
 from phenotype import PhenotypeBeerTracker
 
 
 class BeerTrackerGui(tk.Tk):
-    def __init__(self, delay, environments, ann_weights, layers_list, activation_functions,
-                 gains, time_constant,
-                 fitness_log_average, fitness_log_best, standard_deviation_log,
-                 phenotype):
+    def __init__(self, phenotype, environments,
+                 fitness_log_average, fitness_log_best, standard_deviation_log):
         tk.Tk.__init__(self)
-        self.delay = delay
-        self.environments = environments
-        self.ann = Ann(weights=ann_weights, hidden_layers=layers_list, activation_functions=activation_functions,
-                       gains=gains, time_constants=time_constant)
+        self.delay = INITIAL_DELAY
         self.phenotype = phenotype
+        self.environments = environments
+        self.ann = CTRAnn(weights=phenotype.prepare_weights_for_ann(), hidden_layers=phenotype.hidden_layers,
+                          activation_functions=phenotype.activation_functions,
+                          gains=phenotype.get_gains(), time_constants=phenotype.get_time_constants())
         self.current_timestep = 0
         self.max_timestep = TIMESTEPS
         self.standard_deviation_log = standard_deviation_log
@@ -33,7 +32,6 @@ class BeerTrackerGui(tk.Tk):
         self.step_text = None
         self.beer_components = []
         self.agent_components = []
-        self.pulling = [False for _ in range(len(environments))]
         self.cell_size = (SCREEN_WIDTH - (max(2, len(environments) + 1)) * GRID_OFFSET) / \
                          (WORLD_WIDTH * max(2, len(environments)))
         self.canvas = tk.Canvas(self, width=SCREEN_WIDTH, height=(self.cell_size + 8)*self.environments[0].height,
@@ -43,8 +41,8 @@ class BeerTrackerGui(tk.Tk):
         self.bind('<space>', self.toggle_pause)
         self.bind('<n>', self.decrease_simulation_speed)
         self.bind('<m>', self.increase_simulation_speed)
-        self.bind('<a>', self.move_agent_left)
-        self.bind('<d>', self.move_agent_right)
+        # self.bind('<a>', self.move_agent_left)
+        # self.bind('<d>', self.move_agent_right)
         self.reset_button = tk.Button(self, text="Reset board", command=self.reset_gui_with_new_environment).pack()
         self.draw_text()
         self.draw_board()
@@ -133,20 +131,15 @@ class BeerTrackerGui(tk.Tk):
         self.canvas.itemconfig(self.step_text, text="Step: " + str(self.current_timestep + 1))
 
     def draw_agents(self):
-        for k in range(len(self.agent_components)):
-            for l in range(len(self.agent_components[k])):
-                self.canvas.delete(self.agent_components[k][l])
-        self.agent_components = []
-
+        self.clean_agents()
         for i in range(len(self.environments)):
             agent = self.environments[i].agent
-            beer_object = self.environments[i].beer_object
             offset = (i * (WORLD_WIDTH * self.cell_size + GRID_OFFSET))
             agent_components = []
             color = "green"
-            if self.pulling[i]:
+            if self.environments[i].pulling:
                 color = "yellow"
-                self.pulling[i] = False
+                self.environments[i].pulling = False
             for x in agent.range:
                 agent_components.append(self.canvas.create_oval(
                         x * self.cell_size + GRID_OFFSET + offset,
@@ -156,20 +149,11 @@ class BeerTrackerGui(tk.Tk):
                         fill=color))
             self.agent_components.append(agent_components)
 
-    #TODO fix better update
-    '''
-    def update_agents(self):
-        for i in range(len(self.environments)):
-            agent = self.environments[i].agent
-            offset = (i * (WORLD_WIDTH * self.cell_size + GRID_OFFSET))
-            for j in range(len(self.agent_components[i])):
-                x = agent.range[j]
-                self.canvas.itemconfig(self.agent_components[i][j],
-                                       (x * self.cell_size + GRID_OFFSET + offset,
-                        (WORLD_HEIGHT - 1) * self.cell_size + GRID_OFFSET,
-                        (x + 1) * self.cell_size + GRID_OFFSET + offset,
-                        (WORLD_HEIGHT) * self.cell_size + GRID_OFFSET))
-    '''
+    def clean_agents(self):
+        for k in range(len(self.agent_components)):
+            for l in range(len(self.agent_components[k])):
+                self.canvas.delete(self.agent_components[k][l])
+        self.agent_components = []
 
     def start_simulation(self):
         self.current_timestep = 0
@@ -183,68 +167,14 @@ class BeerTrackerGui(tk.Tk):
                     agent_sensor_output = self.environments[i].agent.get_sensor_array(self.environments[i])
                     ann_inputs = agent_sensor_output
                     prediction = self.ann.predict(inputs=ann_inputs)
-                    best_index = prediction.argmax()
-                    # x_direction_size = int(floor(prediction[best_index] * (AGENT_MAX_NR_OF_STEPS + 1 - 0.0001)))
-                    if ONE_HOT_OUTPUT:
-                        if best_index == 0:
-                            pass
-                        elif best_index == 1:
-                            self.environments[i].agent.move_right(x_direction_size=1)
-                        elif best_index == 2:
-                            self.environments[i].agent.move_right(x_direction_size=2)
-                        elif best_index == 3:
-                            self.environments[i].agent.move_right(x_direction_size=3)
-                        elif best_index == 4:
-                            self.environments[i].agent.move_right(x_direction_size=4)
-                        elif best_index == 5:
-                            self.environments[i].agent.move_left(x_direction_size=1)
-                        elif best_index == 6:
-                            self.environments[i].agent.move_left(x_direction_size=2)
-                        elif best_index == 7:
-                            self.environments[i].agent.move_left(x_direction_size=3)
-                        elif best_index == 8:
-                            self.environments[i].agent.move_left(x_direction_size=4)
-                        elif self.environments[i].agent.agent_type == 3 and best_index == 9:
-                            self.environments[i].pull_object()
-                            self.pulling[i] = True
-                    else:
-                        if prediction[0] > 0.5:
-                            if self.environments[i].agent.agent_type == 3 and prediction[2] > prediction[0]:
-                                self.environments[i].pull_object()
-                                self.pulling[i] = True
-                            # Move right
-                            elif prediction[1] < 0.2:
-                                pass
-                            elif prediction[1] < 0.4:
-                                self.environments[i].agent.move_right(x_direction_size=1)
-                            elif prediction[1] < 0.6:
-                                self.environments[i].agent.move_right(x_direction_size=2)
-                            elif prediction[1] < 0.8:
-                                self.environments[i].agent.move_right(x_direction_size=3)
-                            else:
-                                self.environments[i].agent.move_right(x_direction_size=4)
-                        else:
-                            if self.environments[i].agent.agent_type == 3 and prediction[2] < prediction[0]:
-                                self.environments[i].pull_object()
-                                self.pulling[i] = True
-                            # Move left
-                            elif prediction[1] < 0.2:
-                                pass
-                            elif prediction[1] < 0.4:
-                                self.environments[i].agent.move_left(x_direction_size=1)
-                            elif prediction[1] < 0.6:
-                                self.environments[i].agent.move_left(x_direction_size=2)
-                            elif prediction[1] < 0.8:
-                                self.environments[i].agent.move_left(x_direction_size=3)
-                            else:
-                                self.environments[i].agent.move_left(x_direction_size=4)
-
+                    self.environments[i].prediction_to_maneuver(prediction=prediction)
                 self.draw_agents()
                 self.draw_beer_objects()
                 self.update_text()
                 self.current_timestep += 1
             else:
                 print "Simulation over"
+                print self.ann.weights
                 PhenotypeBeerTracker.environments_for_fitness = self.environments
                 for l in range(len(self.environments)):
                     PhenotypeBeerTracker.environments_for_fitness[l].reset()

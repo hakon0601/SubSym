@@ -11,6 +11,7 @@ class BeerTrackerWorld:
         self.height = height
         self.agent = BeerTrackerAgent(x=randrange(WORLD_WIDTH - AGENT_SIZE), agent_type=agent_type)
         self.beer_object_index = 0
+        self.pulling = False
         self.nr_of_pulls = 0
         if agent_type == 3:
             self.beer_objects = [BeerObject() for _ in range(TIMESTEPS + 1)]
@@ -59,7 +60,64 @@ class BeerTrackerWorld:
                 score[0][2] += 1
             else:
                 score[1][2] += 1
-        self.beer_objects
+
+    def prediction_to_maneuver(self, prediction):
+        best_index = prediction.argmax()
+        self.pulling = False
+        # x_direction_size = int(floor(prediction[best_index] * (AGENT_MAX_NR_OF_STEPS + 1 - 0.0001)))
+        if ONE_HOT_OUTPUT:
+            if best_index == 0:
+                pass
+            elif best_index == 1:
+                self.agent.move_right(x_direction_size=1)
+            elif best_index == 2:
+                self.agent.move_right(x_direction_size=2)
+            elif best_index == 3:
+                self.agent.move_right(x_direction_size=3)
+            elif best_index == 4:
+                self.agent.move_right(x_direction_size=4)
+            elif best_index == 5:
+                self.agent.move_left(x_direction_size=1)
+            elif best_index == 6:
+                self.agent.move_left(x_direction_size=2)
+            elif best_index == 7:
+                self.agent.move_left(x_direction_size=3)
+            elif best_index == 8:
+                self.agent.move_left(x_direction_size=4)
+            elif self.agent.agent_type == 3 and best_index == 9:
+                self.pull_object()
+                self.pulling = True
+        else:
+            if prediction[0] > 0.5:
+                if self.agent.agent_type == 3 and prediction[2] > prediction[0]:
+                    self.pull_object()
+                    self.pulling = True
+                # Move right
+                elif prediction[1] < 0.2:
+                    pass
+                elif prediction[1] < 0.4:
+                    self.agent.move_right(x_direction_size=1)
+                elif prediction[1] < 0.6:
+                    self.agent.move_right(x_direction_size=2)
+                elif prediction[1] < 0.8:
+                    self.agent.move_right(x_direction_size=3)
+                else:
+                    self.agent.move_right(x_direction_size=4)
+            else:
+                if self.agent.agent_type == 3 and prediction[2] < prediction[0]:
+                    self.pull_object()
+                    self.pulling = True
+                # Move left
+                elif prediction[1] < 0.2:
+                    pass
+                elif prediction[1] < 0.4:
+                    self.agent.move_left(x_direction_size=1)
+                elif prediction[1] < 0.6:
+                    self.agent.move_left(x_direction_size=2)
+                elif prediction[1] < 0.8:
+                    self.agent.move_left(x_direction_size=3)
+                else:
+                    self.agent.move_left(x_direction_size=4)
 
     def reset(self):
         self.score = [[0, 0, 0], [0, 0, 0]]

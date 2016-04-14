@@ -1,9 +1,8 @@
 from __future__ import division
 from random import random
 from copy import deepcopy
-from ctrann import Ann
+from ctrann import CTRAnn
 from constants import *
-from math import floor
 
 
 class Phenotype:
@@ -36,8 +35,6 @@ class Phenotype:
 class PhenotypeBeerTracker(Phenotype):
 
     environments_for_fitness = None
-    best_capture = 1
-    best_avoidance = 1
 
     def __init__(self, genotype, symbol_set_size, hidden_layers, activation_functions):
         Phenotype.__init__(self, genotype)
@@ -91,38 +88,20 @@ class PhenotypeBeerTracker(Phenotype):
                 avoidance_fitness = environments_copy[i].score[1][1] / sum(environments_copy[i].score[1])
                 avoidance_weight = 0.3
             else:
-                if (environments_copy[i].score[0][0] + environments_copy[i].pull_score[0][0]) > PhenotypeBeerTracker.best_capture:
-                    PhenotypeBeerTracker.best_capture = (environments_copy[i].score[0][0] + environments_copy[i].pull_score[0][0])
-                if (environments_copy[i].score[1][1] + environments_copy[i].pull_score[1][1]) > PhenotypeBeerTracker.best_avoidance:
-                    PhenotypeBeerTracker.best_avoidance = (environments_copy[i].score[1][1] + environments_copy[i].pull_score[1][1])
-                #
-                # # TODO make pull fitness
-                # catching_fitness = (environments_copy[i].score[0][0] + environments_copy[i].pull_score[0][0]) / (PhenotypeBeerTracker.best_capture + 1)
-                # catching_fitness *= 0.5
-                # avoidance_fitness = (environments_copy[i].score[1][1] + environments_copy[i].pull_score[1][1]) / (PhenotypeBeerTracker.best_avoidance + 1)
-                # avoidance_fitness *= 0.5
-                # speed_fitness = (sum(environments_copy[i].score[0]) + sum(environments_copy[i].pull_score[0])) / float(len(environments_copy[i].beer_objects))
-                # speed_fitness *= 0.1
-                # print sum(environments_copy[i].pull_score[0]) + sum(environments_copy[i].pull_score[0])
-                # pull_catching_fitness = environments_copy[i].pull_score[0][0] / (sum(environments_copy[i].pull_score[0]) + 1)
-                # pull_catching_fitness *= 0.0
-                # pull_avoidance_fitness = environments_copy[i].pull_score[1][1] / (sum(environments_copy[i].pull_score[1]) + 1)
-                # pull_avoidance_fitness *= 0.0
-                # fitness_sum += catching_fitness + avoidance_fitness + pull_catching_fitness + pull_avoidance_fitness
-
                 catching_fitness = (environments_copy[i].score[0][0] + environments_copy[i].pull_score[0][0]) / float(sum(environments_copy[i].score[0]) + sum(environments_copy[i].pull_score[0]))
                 catching_weight = 0.5
                 avoidance_fitness = (environments_copy[i].score[1][1] + environments_copy[i].pull_score[1][1]) / float(sum(environments_copy[i].score[1]) + sum(environments_copy[i].pull_score[1]))
                 avoidance_weight = 0.1
                 speed_fitness = (sum(environments_copy[i].score[0]) + sum(environments_copy[i].pull_score[0])) / float(len(environments_copy[i].beer_objects))
                 speed_weight = 0.4
+                fitness_components[i].append(round(speed_fitness/(speed_weight), 3))
+
 
             catching_fitness *= catching_weight
             avoidance_fitness *= avoidance_weight
             speed_fitness *= speed_weight
             fitness_components[i].append(round(catching_fitness/catching_weight, 3))
             fitness_components[i].append(round(avoidance_fitness/avoidance_weight, 3))
-            fitness_components[i].append(round(speed_fitness/speed_weight, 3))
 
             fitness_sum += catching_fitness + avoidance_fitness + speed_fitness
 
@@ -131,65 +110,15 @@ class PhenotypeBeerTracker(Phenotype):
     # Testing the phenotype configuration on the environments
     def run_simulation(self, environments_copy):
         weights = self.prepare_weights_for_ann()
-        ann = Ann(weights=weights, hidden_layers=self.hidden_layers, activation_functions=self.activation_functions,
-                  gains=self.get_gains(), time_constants=self.get_time_constants())
+        ann = CTRAnn(weights=weights, hidden_layers=self.hidden_layers, activation_functions=self.activation_functions,
+                     gains=self.get_gains(), time_constants=self.get_time_constants())
         for j in range(len(environments_copy)):
             for _ in range(TIMESTEPS):
                 environments_copy[j].drop_object_one_level()
                 agent_sensor_output = environments_copy[j].agent.get_sensor_array(environments_copy[j])
                 ann_inputs = agent_sensor_output
                 prediction = ann.predict(inputs=ann_inputs)
-                best_index = prediction.argmax()
-                if ONE_HOT_OUTPUT:
-                    if best_index == 0:
-                        pass
-                    elif best_index == 1:
-                        environments_copy[j].agent.move_right(x_direction_size=1)
-                    elif best_index == 2:
-                        environments_copy[j].agent.move_right(x_direction_size=2)
-                    elif best_index == 3:
-                        environments_copy[j].agent.move_right(x_direction_size=3)
-                    elif best_index == 4:
-                        environments_copy[j].agent.move_right(x_direction_size=4)
-                    elif best_index == 5:
-                        environments_copy[j].agent.move_left(x_direction_size=1)
-                    elif best_index == 6:
-                        environments_copy[j].agent.move_left(x_direction_size=2)
-                    elif best_index == 7:
-                        environments_copy[j].agent.move_left(x_direction_size=3)
-                    elif best_index == 8:
-                        environments_copy[j].agent.move_left(x_direction_size=4)
-                    elif environments_copy[j].agent.agent_type == 3 and best_index == 9:
-                        environments_copy[j].pull_object()
-                else:
-                    if prediction[0] > 0.5:
-                        if environments_copy[j].agent.agent_type == 3 and prediction[2] > prediction[0]:
-                            environments_copy[j].pull_object()
-                        # Move right
-                        elif prediction[1] < 0.2:
-                            pass
-                        elif prediction[1] < 0.4:
-                            environments_copy[j].agent.move_right(x_direction_size=1)
-                        elif prediction[1] < 0.6:
-                            environments_copy[j].agent.move_right(x_direction_size=2)
-                        elif prediction[1] < 0.8:
-                            environments_copy[j].agent.move_right(x_direction_size=3)
-                        else:
-                            environments_copy[j].agent.move_right(x_direction_size=4)
-                    else:
-                        if environments_copy[j].agent.agent_type == 3 and prediction[2] < prediction[0]:
-                            environments_copy[j].pull_object()
-                        # Move left
-                        elif prediction[1] < 0.2:
-                            pass
-                        elif prediction[1] < 0.4:
-                            environments_copy[j].agent.move_left(x_direction_size=1)
-                        elif prediction[1] < 0.6:
-                            environments_copy[j].agent.move_left(x_direction_size=2)
-                        elif prediction[1] < 0.8:
-                            environments_copy[j].agent.move_left(x_direction_size=3)
-                        else:
-                            environments_copy[j].agent.move_left(x_direction_size=4)
+                environments_copy[j].prediction_to_maneuver(prediction=prediction)
 
     def prepare_weights_for_ann(self):
         weights = []

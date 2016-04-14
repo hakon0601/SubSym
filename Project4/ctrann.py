@@ -5,16 +5,19 @@ from copy import copy
 from math import exp
 
 
-class Ann:
+class CTRAnn:
     def __init__(self, weights, hidden_layers, activation_functions, gains, time_constants):
         self.weights = [np.array(weight) for weight in weights]
         self.hidden_layers = hidden_layers
         self.activation_functions = activation_functions
-        self.gains = [[gains[sum(self.hidden_layers[1:(i - 1)]) + j] for j in range(self.hidden_layers[i])]
+        self.gains = [[gains[sum(self.hidden_layers[1:(i - 1)]) + j]
+                       for j in range(self.hidden_layers[i])]
                       for i in range(1, len(self.hidden_layers))]
-        self.time_constants = [[time_constants[sum(self.hidden_layers[1:(i - 1)]) + j] for j in range(self.hidden_layers[i])]
-                      for i in range(1, len(self.hidden_layers))]
-        self.neuron_internal_state = [np.array([0.0 for _ in range(self.hidden_layers[i])]) for i in range(1, len(self.hidden_layers))]
+        self.time_constants = [[time_constants[sum(self.hidden_layers[1:(i - 1)]) + j]
+                                for j in range(self.hidden_layers[i])]
+                               for i in range(1, len(self.hidden_layers))]
+
+        self.neuron_internal_state = [np.zeros(self.hidden_layers[i]) for i in range(1, len(self.hidden_layers))]
 
     def activation_function(self, dot_product, activation_function):
         if activation_function == ActivationFunction.sigmoid:
@@ -43,6 +46,10 @@ class Ann:
         e_x = np.exp(x - np.max(x))
         return e_x / e_x.sum()
 
+    @staticmethod
+    def calculate_state_output(internal_state, gains):
+        return 1 / (1 + np.exp(-1 * np.array(internal_state) * gains))
+
     def predict(self, inputs):
         signal = np.array(inputs)
         for i in range(len(self.hidden_layers) - 1):
@@ -59,6 +66,3 @@ class Ann:
         # Recompute the derivative and update the internal state
         for i in range(len(signal)):
             internal_state[i] += (-internal_state[i] + signal[i]) / float(time_constants[i])
-
-    def calculate_state_output(self, internal_state, gains):
-        return 1 / (1 + np.exp(-internal_state * gains))

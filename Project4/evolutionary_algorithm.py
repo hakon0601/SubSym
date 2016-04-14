@@ -9,6 +9,7 @@ from threading import Thread
 from multi import parmap
 from constants import *
 
+
 class EvolutionaryAlgorithm:
     def __init__(self, genotype_pool_size, adult_pool_size, elitism,
                  genotype_length, phenotype_length, adult_selection_protocol,
@@ -75,10 +76,8 @@ class EvolutionaryAlgorithm:
         if MULTIPROCESSING:
             res = parmap(PhenotypeBeerTracker.fitness_evaluation, self.phenotype_children_pool)
         else:
-            #res = [PhenotypeBeerTracker.fitness_evaluation(phenotype) for phenotype in self.phenotype_children_pool]
             for phenotype in self.phenotype_children_pool:
-                a = PhenotypeBeerTracker.fitness_evaluation(phenotype)
-                res.append(a)
+                res.append(PhenotypeBeerTracker.fitness_evaluation(phenotype))
         for i in range(len(res)):
             self.phenotype_children_pool[i].fitness_value = res[i][0]
             self.phenotype_children_pool[i].fitness_components = res[i][1]
@@ -100,7 +99,6 @@ class EvolutionaryAlgorithm:
         self.phenotype_adult_pool = self.phenotype_adult_pool[:self.adult_pool_size]
 
     def scale_fitness_of_adult_pool(self):
-        # TODO This array can be generated when calculating fitness
         fitness_array = array([phenotype.fitness_value for phenotype in self.phenotype_adult_pool], dtype=float)
         total_sum = sum(fitness_array)
         self.avg_fitness = total_sum/self.adult_pool_size

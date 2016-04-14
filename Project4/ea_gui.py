@@ -237,18 +237,12 @@ class EAGui(tk.Tk):
         print "Avg best fitness:", sum([self.fitness_log_best[i][-1] for i in range(len(self.fitness_log_best))]) / \
                                    len(self.fitness_log_best)
         print "Best fitness:", max([self.fitness_log_best[i][-1] for i in range(len(self.fitness_log_best))])
-        weights = self.ea.phenotype_adult_pool[0].prepare_weights_for_ann()
-        BeerTrackerGui(delay=300,
+        BeerTrackerGui(
+                    phenotype=self.ea.phenotype_adult_pool[0],
                     environments=self.beertracker_worlds,
-                    ann_weights=weights,
-                    layers_list=self.layers_list,
-                    activation_functions=self.activations_list,
-                    gains= self.ea.phenotype_adult_pool[0].get_gains(),
-                    time_constant=self.ea.phenotype_adult_pool[0].get_time_constants(),
                     fitness_log_average=self.fitness_log_average,
                     fitness_log_best=self.fitness_log_best,
-                    standard_deviation_log=self.standard_deviation_log,
-                    phenotype=self.ea.phenotype_adult_pool[0])
+                    standard_deviation_log=self.standard_deviation_log)
         print "Average Generations:", \
             sum([len(l) for l in self.fitness_log_average]) / len(self.fitness_log_average)
 

@@ -5,6 +5,7 @@ from numpy import array, std
 from math import exp
 from genotype import Genotype
 from phenotype import PhenotypeAnn
+from multi import *
 
 
 class EvolutionaryAlgorithm:
@@ -68,13 +69,15 @@ class EvolutionaryAlgorithm:
                             activation_functions=self.activation_functions)
 
     def do_fitness_testing(self, environments):
-        for i in range(len(self.phenotype_children_pool)):
-            self.phenotype_children_pool[i].fitness_value = \
-                self.phenotype_children_pool[i].fitness_evaluation(environments)
+        PhenotypeAnn.environments_for_fitness = environments
+        res = parmap(PhenotypeAnn.fitness_evaluation, self.phenotype_children_pool)
+        for i in range(len(res)):
+            self.phenotype_children_pool[i].fitness_value = res[i]
+
         if self.adult_selection_protocol == 3:
-            for i in range(len(self.phenotype_adult_pool)):
-                self.phenotype_adult_pool[i].fitness_value = \
-                    self.phenotype_adult_pool[i].fitness_evaluation(environments)
+            res = parmap(PhenotypeAnn.fitness_evaluation, self.phenotype_adult_pool)
+            for i in range(len(res)):
+                self.phenotype_adult_pool[i].fitness_value = res[i]
 
     def refill_adult_pool(self):
         # Full And over-production. Dependant on difference between adult pool- and genotype pool size

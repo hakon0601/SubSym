@@ -34,6 +34,9 @@ class Phenotype:
 
 
 class PhenotypeAnn(Phenotype):
+
+    environments_for_fitness = None
+
     def __init__(self, genotype, symbol_set_size, hidden_layers, activation_functions):
         Phenotype.__init__(self, genotype)
         self.symbol_set_size = symbol_set_size
@@ -44,9 +47,10 @@ class PhenotypeAnn(Phenotype):
     def develop_from_genotype(self):
         return [self.parent.dna_vector[i] - self.symbol_set_size//2 for i in range(len(self.parent.dna_vector))]
 
-    def fitness_evaluation(self, environments=None):
-        environments_copy = deepcopy(environments)
-        self.run_simulation(environments_copy)
+    @staticmethod
+    def fitness_evaluation(phenotype, environments=None):
+        environments_copy = deepcopy(PhenotypeAnn.environments_for_fitness)
+        phenotype.run_simulation(environments_copy)
         # Calculate the average score
         fitness_sum = 0
         for i in range(len(environments_copy)):
